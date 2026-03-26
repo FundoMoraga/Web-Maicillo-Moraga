@@ -1788,9 +1788,9 @@
                             <td>Terminación ornamental</td>
                         </tr>
                         <tr>
-                            <td>Precio m3 en cantera (cargado)</td>
-                            <td>$7.000</td>
-                            <td>$5.000</td>
+                            <td>Precio m3 en cantera (cargado, neto)</td>
+                            <td>$7.000 + IVA</td>
+                            <td>$5.000 + IVA</td>
                             <td>Cotización caso a caso</td>
                         </tr>
                     </tbody>
@@ -1813,7 +1813,7 @@
             <div class="calc-grid">
                 <article id="calculadora" class="module-card">
                     <h3>Calculadora de volumen y costo referencial</h3>
-                    <p>Calcula volumen técnico, tonelaje estimado y costo referencial por m3 cargado en cantera (sin despacho).</p>
+                    <p>Calcula volumen técnico, tonelaje estimado y costo referencial por m3 cargado en cantera (precio neto, más IVA 19%, sin despacho).</p>
                     <form class="module-form" id="volumeForm">
                         <div>
                             <label for="calcProduct">Producto</label>
@@ -2233,10 +2233,10 @@
                         'Fecha: ' + new Date().toLocaleDateString('es-CL'),
                         '',
                         'PRODUCTOS OFICIALES',
-                        '1) Maicillo Fino (Arneado) - 0.5 a 8 mm - 1.60 t/m3 - Espesor sugerido 5-8 cm - $7.000 por m3 cargado en cantera',
+                        '1) Maicillo Fino (Arneado) - 0.5 a 8 mm - 1.60 t/m3 - Espesor sugerido 5-8 cm - $7.000 por m3 cargado en cantera + IVA',
                         '2) Maicillo Grueso - 8 a 20 mm - 1.70 t/m3 - Espesor sugerido 8-15 cm',
                         '3) Piedras Decorativas de Maicillo - 20 a 60 mm - 1.55 t/m3 - Espesor sugerido 4-8 cm - cotización caso a caso',
-                        'Precio Maicillo Grueso: $5.000 por m3 cargado en cantera',
+                        'Precio Maicillo Grueso: $5.000 por m3 cargado en cantera + IVA',
                         'Despachos y grandes volúmenes: caso a caso en +56 9 9445 5713',
                         '',
                         'NOTA: Documento referencial de apoyo tecnico. Ajustar en terreno segun base, pendiente y uso final.',
@@ -2278,7 +2278,9 @@
                     const tons = withWaste * productDensity[product];
                     const truckTrips = Math.max(1, Math.ceil(withWaste / 8));
                     const unitPrice = productPriceM3[product];
-                    const estimatedCost = unitPrice ? withWaste * unitPrice : null;
+                    const estimatedCostNet = unitPrice ? withWaste * unitPrice : null;
+                    const estimatedIva = estimatedCostNet ? estimatedCostNet * 0.19 : null;
+                    const estimatedCostWithIva = estimatedCostNet ? estimatedCostNet * 1.19 : null;
 
                     volumeResult.style.display = 'block';
                     volumeResult.innerHTML =
@@ -2288,7 +2290,7 @@
                         '<strong>Tonelaje estimado:</strong> ' + tons.toFixed(2) + ' t<br>' +
                         '<strong>Logística referencial:</strong> ' + truckTrips + ' viaje(s) para camión de 8 m3.<br>' +
                         (estimatedCost
-                            ? '<strong>Precio referencial en cantera (cargado, sin despacho):</strong> ' + formatCLP(unitPrice) + '/m3<br><strong>Costo estimado:</strong> ' + formatCLP(estimatedCost) + '<br><em>Nota:</em> Despachos y volúmenes muy grandes se revisan caso a caso al +56 9 9445 5713.'
+                            ? '<strong>Precio referencial en cantera (cargado, sin despacho):</strong> ' + formatCLP(unitPrice) + '/m3 neto + IVA<br><strong>Costo estimado neto:</strong> ' + formatCLP(estimatedCostNet) + '<br><strong>IVA (19%):</strong> ' + formatCLP(estimatedIva) + '<br><strong>Total estimado con IVA:</strong> ' + formatCLP(estimatedCostWithIva) + '<br><em>Nota:</em> Despachos y volúmenes muy grandes se revisan caso a caso al +56 9 9445 5713.'
                             : '<strong>Precio:</strong> cotización caso a caso.<br><em>Nota:</em> Piedras decorativas, envíos a otras comunas y grandes volúmenes se revisan caso a caso al +56 9 9445 5713.');
 
                     setStage(1);
