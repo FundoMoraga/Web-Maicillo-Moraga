@@ -768,7 +768,7 @@ async function sendMessage(message) {
     } catch (error) {
         console.error('Error completo:', error);
         typingIndicator.remove();
-        addMessageToChat('Lo siento, hay un problema de conexión. Por favor intenta más tarde o contáctanos al +56 9 4124 2609', 'bot');
+        addMessageToChat('Lo siento, hay un problema de conexión. Por favor intenta más tarde o contáctanos al +56 9 9445 5713', 'bot');
     }
     
     // Scroll to bottom
