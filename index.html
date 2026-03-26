@@ -1278,7 +1278,7 @@
     <section class="hero maicillo-hero" id="inicio">
         <div class="maicillo-hero-bg" aria-hidden="true"></div>
         <div class="maicillo-hero-video-wrap" aria-hidden="true">
-            <video class="maicillo-hero-video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+            <video class="maicillo-hero-video" autoplay muted loop playsinline defaultMuted preload="auto" disablepictureinpicture aria-hidden="true">
                 <source src="IMG_4516%20(1).mov" type="video/quicktime">
             </video>
         </div>
@@ -2151,6 +2151,34 @@
     <script>
         (function () {
             'use strict';
+
+            const heroVideo = document.querySelector('.maicillo-hero-video');
+            const ensureHeroVideoPlayback = () => {
+                if (!heroVideo) return;
+                heroVideo.muted = true;
+                heroVideo.defaultMuted = true;
+                heroVideo.volume = 0;
+                heroVideo.loop = true;
+                const tryPlay = () => {
+                    const maybePromise = heroVideo.play();
+                    if (maybePromise && typeof maybePromise.then === 'function') {
+                        maybePromise.catch(() => {
+                            window.setTimeout(tryPlay, 700);
+                        });
+                    }
+                };
+                if (heroVideo.readyState >= 2) {
+                    tryPlay();
+                } else {
+                    heroVideo.addEventListener('canplay', tryPlay, { once: true });
+                }
+            };
+            ensureHeroVideoPlayback();
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    ensureHeroVideoPlayback();
+                }
+            });
 
             const productDensity = {
                 amarillo: 1.60,
