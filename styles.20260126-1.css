@@ -514,21 +514,26 @@ a {
 
 .hero-title {
     font-size: clamp(2.5rem, 5vw, 4.5rem);
-    font-weight: 700;
+    font-weight: 800;
     margin-bottom: 25px;
-    line-height: 1.1;
-    background: linear-gradient(135deg, #ffffff 0%, #d4af37 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    filter: drop-shadow(0 2px 20px rgba(212, 175, 55, 0.3));
-    letter-spacing: -1px;
+    line-height: 1.05;
+    color: #fff;
+    -webkit-text-fill-color: #fff;
+    letter-spacing: -2px;
+    text-shadow: 0 2px 40px rgba(255, 255, 255, 0.18), 0 0 80px rgba(212, 175, 55, 0.12);
 }
 
 .highlight {
-    color: var(--accent-color);
-    position: relative;
     display: inline-block;
+    position: relative;
+    background: linear-gradient(130deg, #f7d070 0%, #e8960a 50%, #c8860a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-style: italic;
+    font-weight: 900;
+    letter-spacing: -1px;
+    filter: drop-shadow(0 3px 18px rgba(232, 150, 10, 0.6));
 }
 
 .hero-subtitle {
