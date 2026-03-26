@@ -1,0 +1,12 @@
+# Imágenes temporales / de trabajo
+Generated Image*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+*.swp
+*.swo
