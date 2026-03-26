@@ -680,7 +680,7 @@ async function resolveApiBaseUrl() {
             const r = await fetch(`${base}/chat/init`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: 'web_probe' }),
+                body: JSON.stringify({ user_id: 'web_probe', site: CHAT_SITE_CONTEXT }),
             });
             if (r.status !== 404 && r.status < 500) return base;
         } catch (e) {}
@@ -694,8 +694,9 @@ async function getApiBaseUrl() {
     }
     return _apiBaseUrlPromise;
 }
-const DEFAULT_GREETING = '¡Hola! Soy Hernando, tu anfitrión en el Fundo Moraga. ¿En qué puedo ayudarte?';
+const DEFAULT_GREETING = '¡Hola! Soy Hernando de Maicillo Moraga. ¿En qué puedo ayudarte hoy?';
 let _hernandoGreetingInitialized = false;
+const CHAT_SITE_CONTEXT = 'maicillo';
 
 // Toggle chat window
 chatToggle?.addEventListener('click', () => {
@@ -747,7 +748,8 @@ async function sendMessage(message) {
             },
             body: JSON.stringify({
                 user_id: getOrCreateUserId(),
-                message: message
+                message: message,
+                site: CHAT_SITE_CONTEXT,
             })
         });
         
@@ -833,7 +835,7 @@ async function initHernandoGreeting(options = {}) {
         const response = await fetch(`${apiBase}/chat/init`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
+            body: JSON.stringify({ user_id: userId, site: CHAT_SITE_CONTEXT })
         });
 
         let greeting = DEFAULT_GREETING;
