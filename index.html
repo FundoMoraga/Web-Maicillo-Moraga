@@ -84,6 +84,13 @@
            ============================================= */
 
         /* Hero override: earth-tone gradient instead of video */
+        :root {
+            --elite-section-space: clamp(72px, 9vw, 132px);
+            --elite-content-max: min(1320px, 92vw);
+            --elite-surface: linear-gradient(165deg, rgba(255, 255, 255, 0.92), rgba(247, 242, 231, 0.9));
+            --elite-shadow: 0 28px 64px rgba(44, 30, 8, 0.22);
+        }
+
         .maicillo-hero {
             position: relative;
             min-height: 100svh;
@@ -92,6 +99,7 @@
             justify-content: center;
             overflow: hidden;
             background: #1a1208;
+            isolation: isolate;
         }
 
         .maicillo-hero-bg {
@@ -104,6 +112,31 @@
             z-index: 0;
         }
 
+        .maicillo-hero-video-wrap {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            opacity: 0.58;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        .maicillo-hero-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: saturate(1.18) contrast(1.04) brightness(0.78);
+            transform: scale(1.05);
+        }
+
+        #hero3dCanvas {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.62;
+        }
+
         /* Subtle texture overlay */
         .maicillo-hero-texture {
             position: absolute;
@@ -111,21 +144,24 @@
             background-image:
                 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Ccircle cx='1' cy='1' r='0.6' fill='rgba(212,175,55,0.06)'/%3E%3Ccircle cx='3' cy='3' r='0.6' fill='rgba(212,175,55,0.04)'/%3E%3C/svg%3E");
             background-size: 4px 4px;
-            z-index: 1;
+            z-index: 3;
             pointer-events: none;
         }
 
         .maicillo-hero .hero-overlay {
             background: linear-gradient(180deg,
-                rgba(0,0,0,0.45) 0%,
-                rgba(10,7,2,0.25) 40%,
-                rgba(10,7,2,0.55) 100%);
-            z-index: 2;
+                rgba(0,0,0,0.52) 0%,
+                rgba(10,7,2,0.3) 40%,
+                rgba(10,7,2,0.62) 100%);
+            z-index: 4;
         }
 
         .maicillo-hero .hero-content {
             position: relative;
-            z-index: 3;
+            z-index: 5;
+            width: min(1120px, 100%);
+            margin-inline: auto;
+            padding-inline: clamp(8px, 2.2vw, 18px);
         }
 
         .maicillo-hero .hero-title {
@@ -253,6 +289,51 @@
                 grid-template-columns: 1fr;
                 width: min(500px, 100%);
             }
+
+            .maicillo-hero .hero-content {
+                width: min(560px, 100%);
+            }
+
+            .hero-info-chips {
+                gap: 8px;
+            }
+
+            .hero-info-chip {
+                padding: 7px 13px;
+                font-size: 0.76rem;
+            }
+        }
+
+        @media (max-width: 980px) {
+            .article-layout,
+            .calc-grid,
+            .products-grid,
+            .trust-grid,
+            .cta-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .chat-window {
+                width: min(92vw, 390px);
+                right: 10px;
+                bottom: 92px;
+                max-height: min(70vh, 540px);
+            }
+
+            .chat-toggle {
+                right: 12px;
+                bottom: 18px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #hero3dCanvas,
+            .maicillo-hero-video {
+                animation: none !important;
+                transition: none !important;
+            }
         }
 
         /* =============================================
@@ -260,7 +341,16 @@
            ============================================= */
 
         .article-section {
-            padding: var(--section-pad-y, 96px) 0;
+            padding: var(--elite-section-space) 0;
+            position: relative;
+            isolation: isolate;
+        }
+
+        .interactive-section,
+        .maicillo-cta-section {
+            padding: var(--elite-section-space) 0;
+            position: relative;
+            isolation: isolate;
         }
 
         .article-section:nth-of-type(even) {
@@ -269,6 +359,38 @@
 
         .article-section:nth-of-type(odd) {
             background: #fff;
+        }
+
+        .container {
+            max-width: var(--elite-content-max);
+        }
+
+        .section-header {
+            max-width: min(960px, 100%);
+            margin-inline: auto;
+            text-wrap: balance;
+        }
+
+        .article-layout,
+        .calc-grid,
+        .products-grid,
+        .trust-grid,
+        .cta-grid {
+            row-gap: clamp(24px, 4vw, 42px);
+        }
+
+        .article-layout > * {
+            min-width: 0;
+        }
+
+        .module-card,
+        .product-card,
+        .trust-card,
+        .case-card,
+        .water-stat {
+            background: var(--elite-surface);
+            box-shadow: var(--elite-shadow);
+            border: 1px solid rgba(136, 102, 42, 0.18);
         }
 
         .article-lead {
@@ -1155,6 +1277,12 @@
          =========================== -->
     <section class="hero maicillo-hero" id="inicio">
         <div class="maicillo-hero-bg" aria-hidden="true"></div>
+        <div class="maicillo-hero-video-wrap" aria-hidden="true">
+            <video class="maicillo-hero-video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+                <source src="IMG_4516%20(1).mov" type="video/quicktime">
+            </video>
+        </div>
+        <canvas id="hero3dCanvas" aria-hidden="true"></canvas>
         <div class="maicillo-hero-texture" aria-hidden="true"></div>
         <div class="hero-overlay" aria-hidden="true"></div>
 
@@ -2461,6 +2589,133 @@
                 }
             });
             window.addEventListener('pageshow', () => hide());
+        })();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js" defer></script>
+    <script>
+        (function () {
+            'use strict';
+
+            const initHero3D = () => {
+                const hero = document.getElementById('inicio');
+                const canvas = document.getElementById('hero3dCanvas');
+                if (!hero || !canvas || typeof window.THREE === 'undefined') return false;
+
+                const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (reduceMotion) return true;
+
+                const THREE = window.THREE;
+                const renderer = new THREE.WebGLRenderer({
+                    canvas,
+                    alpha: true,
+                    antialias: true,
+                    powerPreference: 'high-performance',
+                });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 120);
+                camera.position.set(0, 0, 12);
+
+                const ambient = new THREE.AmbientLight(0xf7d59c, 0.9);
+                const key = new THREE.DirectionalLight(0xffc46b, 1.2);
+                key.position.set(3, 4, 7);
+                const rim = new THREE.DirectionalLight(0x6d4f1a, 0.75);
+                rim.position.set(-4, -2, -6);
+                scene.add(ambient, key, rim);
+
+                const particles = new THREE.Group();
+                const geometry = new THREE.IcosahedronGeometry(0.12, 0);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0xd8b071,
+                    roughness: 0.35,
+                    metalness: 0.05,
+                    transparent: true,
+                    opacity: 0.82,
+                });
+
+                const total = 180;
+                for (let i = 0; i < total; i += 1) {
+                    const mesh = new THREE.Mesh(geometry, material.clone());
+                    mesh.position.set(
+                        (Math.random() - 0.5) * 15,
+                        (Math.random() - 0.5) * 9,
+                        (Math.random() - 0.5) * 8
+                    );
+                    const s = 0.45 + Math.random() * 1.65;
+                    mesh.scale.setScalar(s);
+                    mesh.userData.velocity = 0.0007 + Math.random() * 0.0017;
+                    particles.add(mesh);
+                }
+                scene.add(particles);
+
+                const resize = () => {
+                    const rect = hero.getBoundingClientRect();
+                    const width = Math.max(1, Math.round(rect.width));
+                    const height = Math.max(1, Math.round(rect.height));
+                    renderer.setSize(width, height, false);
+                    camera.aspect = width / height;
+                    camera.updateProjectionMatrix();
+                };
+                resize();
+                window.addEventListener('resize', resize, { passive: true });
+
+                let rafId = 0;
+                let tick = 0;
+                const render = () => {
+                    tick += 0.006;
+                    const scrollY = window.scrollY || 0;
+                    const heroHeight = Math.max(hero.offsetHeight, 1);
+                    const scrollFactor = Math.min(scrollY / heroHeight, 1);
+
+                    particles.rotation.y = tick * 0.35 + scrollFactor * 0.5;
+                    particles.rotation.x = Math.sin(tick * 0.6) * 0.08;
+
+                    particles.children.forEach((mesh, idx) => {
+                        mesh.rotation.x += mesh.userData.velocity * 0.9;
+                        mesh.rotation.y += mesh.userData.velocity * 1.15;
+                        mesh.position.y += Math.sin(tick + idx * 0.19) * 0.0022;
+                        mesh.material.opacity = 0.58 + Math.sin(tick * 2.4 + idx) * 0.12;
+                    });
+
+                    camera.position.x = Math.sin(tick * 0.28) * 0.55;
+                    camera.position.y = Math.cos(tick * 0.24) * 0.22;
+                    camera.lookAt(0, 0, 0);
+
+                    renderer.render(scene, camera);
+                    rafId = window.requestAnimationFrame(render);
+                };
+                rafId = window.requestAnimationFrame(render);
+
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && rafId) {
+                        window.cancelAnimationFrame(rafId);
+                        rafId = 0;
+                        return;
+                    }
+                    if (!document.hidden && !rafId) {
+                        rafId = window.requestAnimationFrame(render);
+                    }
+                });
+
+                return true;
+            };
+
+            let tries = 0;
+            const boot = () => {
+                tries += 1;
+                const started = initHero3D();
+                if (!started && tries < 20) {
+                    window.setTimeout(boot, 120);
+                }
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot, { once: true });
+            } else {
+                boot();
+            }
         })();
     </script>
 
