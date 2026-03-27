@@ -5,3 +5,35 @@ services:
     branch: main
     staticPublishPath: .
     autoDeployTrigger: commit
+
+  - type: web
+    name: fundo-moraga-ai-chat
+    runtime: node
+    branch: main
+    rootDir: ai-chat-service
+    buildCommand: npm install
+    startCommand: npm start
+    plan: starter
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.4
+      - key: COSMOS_ENDPOINT
+        value: https://fundomoraga.documents.azure.com:443/
+      - key: COSMOS_KEY
+        sync: false
+      - key: COSMOS_DATABASE
+        value: chatbot
+      - key: COSMOS_CONTAINER
+        value: conversations
+      - key: CORS_ORIGINS
+        value: https://fundomoraga.com,https://www.fundomoraga.com,https://maicillomoraga.com,https://www.maicillomoraga.com,https://fundo-moraga-maicillo-static.onrender.com
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESERVATION_NOTIFY_EMAIL
+        value: contacto@fundomoraga.com
+      - key: RESERVATION_FROM_EMAIL
+        value: reservas@fundomoraga.com
