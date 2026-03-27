@@ -7,7 +7,10 @@ import { CosmosClient } from '@azure/cosmos';
 const PORT = Number(process.env.PORT || 10000);
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const GOOGLE_AI_API_KEY = readEnv('GOOGLE_AI_API_KEY');
+const GOOGLE_AI_API_KEY =
+  readEnv('GOOGLE_AI_API_KEY') ||
+  readEnv('GEMINI_API_KEY') ||
+  readEnv('GOOGLE_API_KEY');
 const RESEND_API_KEY = readEnv('RESEND_API_KEY');
 const RESERVATION_NOTIFY_EMAIL = readEnv('RESERVATION_NOTIFY_EMAIL') || 'contacto@fundomoraga.com';
 const RESERVATION_FROM_EMAIL = readEnv('RESERVATION_FROM_EMAIL') || 'reservas@fundomoraga.com';
@@ -532,7 +535,9 @@ const VISUALIZE_PROMPT =
 
 app.post('/api/visualize', async (req, res) => {
   if (!GOOGLE_AI_API_KEY) {
-    return res.status(500).json({ error: 'Servicio de visualización no configurado.' });
+    return res.status(500).json({
+      error: 'Servicio de visualización no configurado. Falta GOOGLE_AI_API_KEY, GEMINI_API_KEY o GOOGLE_API_KEY.',
+    });
   }
 
   const { imageBase64, mimeType } = req.body || {};
@@ -564,7 +569,12 @@ app.post('/api/visualize', async (req, res) => {
         ],
       },
     ],
-    generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: {
+        imageSize: '1K',
+      },
+    },
   };
 
   let lastStatus = 0;
@@ -587,19 +597,32 @@ app.post('/api/visualize', async (req, res) => {
         lastStatus = geminiRes.status;
         lastErrText = await geminiRes.text().catch(() => '');
         console.error(`gemini_visualize_error model=${modelName} status=${lastStatus}`, lastErrText.slice(0, 500));
-        // 404 = model not found → try next; other errors → break
-        if (geminiRes.status === 404) continue;
+        // 404/400 may indicate model or config incompatibility, so try fallback.
+        if (geminiRes.status === 404 || geminiRes.status === 400) continue;
         break;
       }
 
       const data = await geminiRes.json();
-      const imagePart = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
+      const candidate = data?.candidates?.[0];
+      const parts = candidate?.content?.parts || [];
+      const imageParts = parts.filter((part) => (
+        part?.inlineData?.data &&
+        String(part.inlineData.mimeType || '').startsWith('image/') &&
+        !part?.thought
+      ));
+      const imagePart = imageParts[imageParts.length - 1];
 
       if (!imagePart?.inlineData?.data) {
-        const blockReason = data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason || 'unknown';
-        console.error(`gemini_no_image model=${modelName} reason=${blockReason}`, JSON.stringify(data).slice(0, 400));
+        const blockReason = data?.promptFeedback?.blockReason || candidate?.finishReason || 'unknown';
+        const finishMessage = candidate?.finishMessage || '';
+        console.error(
+          `gemini_no_image model=${modelName} reason=${blockReason}`,
+          JSON.stringify(data).slice(0, 800),
+        );
         return res.status(502).json({
-          error: `No se pudo generar la imagen (${blockReason}). Intenta con otra foto.`,
+          error: finishMessage
+            ? `No se pudo generar la imagen (${blockReason}). ${finishMessage}`
+            : `No se pudo generar la imagen (${blockReason}). Intenta con otra foto.`,
         });
       }
 
@@ -618,7 +641,7 @@ app.post('/api/visualize', async (req, res) => {
   const userMsg = lastStatus === 429
     ? 'Límite de la API alcanzado. Intenta en unos minutos.'
     : lastStatus >= 400 && lastStatus < 500
-    ? `Error de configuración (${lastStatus}). Contacta al administrador.`
+    ? `Error de configuración (${lastStatus}). ${lastErrText.slice(0, 160) || 'Revisa la API key y el modelo configurado.'}`
     : 'Error al generar la imagen. Intenta con otra foto o en unos momentos.';
 
   return res.status(502).json({ error: userMsg });
