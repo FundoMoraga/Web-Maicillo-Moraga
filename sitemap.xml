@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://maicillomoraga.com/</loc>
+    <lastmod>2026-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://maicillomoraga.com/1CDA5BE7-652E-48ED-866F-1F8EBD2EBEBF.png</image:loc>
+      <image:title>Maicillo Moraga</image:title>
+      <image:caption>Marca Maicillo Moraga en Batuco, Lampa</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://maicillomoraga.com/WhatsApp%20Image%202026-03-25%20at%208.20.20%20PM.jpeg</image:loc>
+      <image:title>Aplicación de maicillo</image:title>
+      <image:caption>Aplicación de maicillo en proyecto de paisajismo</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://maicillomoraga.com/WhatsApp%20Image%202026-03-25%20at%208.19.37%20PM.jpeg</image:loc>
+      <image:title>Proyecto con maicillo</image:title>
+      <image:caption>Superficie técnica con maicillo para drenaje y terminación</image:caption>
+    </image:image>
+  </url>
+</urlset>

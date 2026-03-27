@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://maicillomoraga.com/sitemap.xml
+Host: maicillomoraga.com
