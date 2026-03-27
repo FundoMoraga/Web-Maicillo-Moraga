@@ -1,15 +1,7 @@
-version: "1"
-projects:
-  - name: Maicillo Web
-    environments:
-      - name: Production
-        services:
-          - type: web
-            name: fundo-moraga-maicillo-static
-            runtime: static
-            repo: https://github.com/FundoMoraga/Web-Maicillo-Moraga
-            staticPublishPath: .
-            domains:
-              - maicillomoraga.com
-              - www.maicillomoraga.com
-            autoDeployTrigger: commit
+services:
+  - type: web
+    name: fundo-moraga-maicillo-static
+    runtime: static
+    branch: main
+    staticPublishPath: .
+    autoDeployTrigger: commit
