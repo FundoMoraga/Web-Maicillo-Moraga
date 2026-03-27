@@ -1,11 +1,15 @@
-services:
-  - type: web
-    name: maicillo-moraga-static
-    runtime: static
-    branch: main
-    staticPublishPath: .
-    buildCommand: ""
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: public, max-age=3600
+version: "1"
+projects:
+  - name: Maicillo Web
+    environments:
+      - name: Production
+        services:
+          - type: web
+            name: fundo-moraga-maicillo-static
+            runtime: static
+            repo: https://github.com/FundoMoraga/Web-Maicillo-Moraga
+            staticPublishPath: .
+            domains:
+              - maicillomoraga.com
+              - www.maicillomoraga.com
+            autoDeployTrigger: commit
