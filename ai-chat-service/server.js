@@ -539,7 +539,20 @@ const LANDSCAPE_ARCHITECT_BASE_PROMPT =
   'The output must look like a realistic finished photograph, never an illustration. ' +
   'Do not add text, logos, watermarks or graphic overlays.';
 
-const VISUALIZE_PROMPT = LANDSCAPE_ARCHITECT_BASE_PROMPT;
+const VISUALIZE_PROMPT =
+  `${LANDSCAPE_ARCHITECT_BASE_PROMPT} ` +
+  'Edit the supplied photo instead of reimagining the scene from scratch. ' +
+  'Keep the original architecture, walls, windows, doors, stairs, built structures, framing, lens perspective and spatial layout intact. ' +
+  'Only introduce plausible maicillo surfacing, refined edge treatment, cleanup, and subtle landscape improvements that could realistically be built in the same exact space.';
+
+const TEXT_TO_IMAGE_BASE_PROMPT =
+  'Act as a premium landscape visualization director and photorealistic image generator for Maicillo Moraga. ' +
+  'Create a realistic concept image of an exterior project based on the user brief. ' +
+  'The result must depict a buildable outdoor space where maicillo is the protagonist material, with a warm yellow/ochre tone, clean borders, coherent planting, elegant geometry, and high-end finish quality. ' +
+  'Interpret the brief as a landscaping concept for a patio, garden, pathway, courtyard, access road, or similar exterior area. ' +
+  'If the user asks for something unrelated to exterior landscaping, redirect it into a plausible outdoor maicillo design concept instead of following it literally. ' +
+  'The image must look like a finished professional photograph, not an illustration, collage, poster, or UI mockup. ' +
+  'Do not add text, logos, watermarks, split screens, labels, or graphic overlays.';
 
 app.post('/api/visualize', async (req, res) => {
   if (!googleAI) {
@@ -622,7 +635,7 @@ app.post('/api/generar-imagen', async (req, res) => {
     return res.status(400).json({ error: 'Debes enviar un prompt.' });
   }
 
-  const enforcedPrompt = `${LANDSCAPE_ARCHITECT_BASE_PROMPT}\n\nUser request: ${prompt}`;
+  const enforcedPrompt = `${TEXT_TO_IMAGE_BASE_PROMPT}\n\nProject brief from user: ${prompt}`;
 
   const modelName = 'gemini-3.1-flash-image-preview';
 
@@ -636,7 +649,7 @@ app.post('/api/generar-imagen', async (req, res) => {
     });
 
     const parts = response?.candidates?.[0]?.content?.parts || [];
-    const imagePart = parts.find((part) => (
+    const imagePart = [...parts].reverse().find((part) => (
       part?.inlineData?.data &&
       String(part.inlineData.mimeType || '').startsWith('image/')
     ));

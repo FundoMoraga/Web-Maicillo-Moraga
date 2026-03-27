@@ -2689,12 +2689,12 @@
                 <p class="viz-error" id="vizError" style="display:none;" role="alert"></p>
 
                 <div class="nb-generator" style="margin-top:2rem; text-align:center;">
-                    <h3 style="margin-bottom:0.6rem;">Crea tu imagen con Nano Banana 2</h3>
-                    <p style="margin:0 0 0.8rem; color:var(--text-light, #6b7280);">Escribe una idea y genera una imagen desde texto.</p>
+                    <h3 style="margin-bottom:0.6rem;">Crea una propuesta visual con Nano Banana 2</h3>
+                    <p style="margin:0 0 0.8rem; color:var(--text-light, #6b7280);">Describe un patio, jardín, acceso o sendero y la IA generará una idea visual fotorealista centrada en maicillo.</p>
                     <input
                         type="text"
                         id="nbPrompt"
-                        placeholder="Ej: Un astronauta montando a caballo en Marte..."
+                        placeholder="Ej: Patio contemporáneo con sendero de maicillo fino, bordes limpios y vegetación de bajo consumo hídrico"
                         style="width:min(100%, 720px); padding:10px 12px; border-radius:10px; border:1px solid #d1d5db;"
                     >
                     <div style="margin-top:0.8rem;">
@@ -3609,7 +3609,9 @@
                     return;
                 }
 
-                nbResult.innerHTML = '<p>Cargando... Nano Banana 2 esta trabajando.</p>';
+                nbGenerateBtn.disabled = true;
+                nbGenerateBtn.textContent = 'Generando...';
+                nbResult.innerHTML = '<p>Generando propuesta visual de maicillo...</p>';
 
                 try {
                     const respuesta = await fetch(`${VIZ_API_BASE}/api/generar-imagen`, {
@@ -3621,13 +3623,19 @@
                     const datos = await respuesta.json().catch(() => ({}));
                     if (!respuesta.ok || !datos.imagen) {
                         nbResult.innerHTML = `<p style="color:red;">Error: ${datos.error || 'No se pudo generar la imagen.'}</p>`;
+                        nbGenerateBtn.disabled = false;
+                        nbGenerateBtn.textContent = 'Generar';
                         return;
                     }
 
                     const mimeType = datos.mimeType || 'image/jpeg';
                     nbResult.innerHTML = `<img src="data:${mimeType};base64,${datos.imagen}" alt="Imagen generada" loading="lazy" decoding="async" style="max-width:100%; margin-top:20px; border-radius:8px;">`;
+                    nbGenerateBtn.disabled = false;
+                    nbGenerateBtn.textContent = 'Generar';
                 } catch (_error) {
                     nbResult.innerHTML = '<p style="color:red;">Fallo de conexión.</p>';
+                    nbGenerateBtn.disabled = false;
+                    nbGenerateBtn.textContent = 'Generar';
                 }
             });
         }
