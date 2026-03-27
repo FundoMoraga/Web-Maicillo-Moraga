@@ -171,6 +171,18 @@
             font-size: clamp(2.2rem, 6vw, 4.5rem);
         }
 
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 0.8rem;
+        }
+
+        .hero-actions .btn {
+            min-width: min(100%, 240px);
+        }
+
         /* ---- Molecule badge ---- */
         .maicillo-badge {
             display: inline-flex;
@@ -304,6 +316,10 @@
             .hero-info-chip {
                 padding: 7px 13px;
                 font-size: 0.76rem;
+            }
+
+            .hero-actions .btn {
+                width: min(100%, 360px);
             }
         }
 
@@ -1299,9 +1315,17 @@
             <p class="hero-subtitle animate-fade-in-delay">
                 Una solución Estética, Ecológica y Enómica para tu proyecto
             </p>
-            <a href="#origen" class="btn btn--primary btn--lg animate-fade-in-delay-2" style="margin-top:0.5rem;">
-                Descubre el maicillo
-            </a>
+            <div class="hero-actions animate-fade-in-delay-2">
+                <a href="#origen" class="btn btn--primary btn--lg">
+                    Descubre el maicillo
+                </a>
+                <a href="#herramientas" class="btn btn--primary btn--lg">
+                    Calcula tu proyecto
+                </a>
+                <a href="tel:+56994455713" class="btn btn--primary btn--lg">
+                    Contáctanos
+                </a>
+            </div>
 
             <div class="hero-featured-gallery animate-fade-in-delay-2" aria-label="Imágenes destacadas de Maicillo Moraga">
                 <figure class="hero-featured-photo">
@@ -1814,7 +1838,7 @@
             <div class="calc-grid">
                 <article id="calculadora" class="module-card">
                     <h3>Calculadora de volumen y costo referencial</h3>
-                    <p>Calcula volumen técnico, tonelaje estimado y costo referencial por m3 cargado en cantera (precio neto, más IVA 19%, sin despacho).</p>
+                    <p>Calcula volumen técnico, tonelaje estimado y costo referencial por m3 cargado en cantera con IVA 19% incluido en el resultado final, sin despacho.</p>
                     <form class="module-form" id="volumeForm">
                         <div>
                             <label for="calcProduct">Producto</label>
@@ -2013,7 +2037,7 @@
                 </details>
                 <details class="faq-item">
                     <summary>¿La calculadora incluye precio?</summary>
-                    <p>No. La calculadora entrega únicamente volumen, tonelaje referencial y logística sugerida. La cotización final se define por volumen, comuna y ventana de despacho.</p>
+                    <p>Sí. La calculadora usa los precios referenciales ya definidos en el proyecto y muestra el resultado con IVA 19% sumado: maicillo fino desde $7.000 por m3 más IVA y maicillo grueso desde $5.000 por m3 más IVA. Las piedras decorativas siguen en cotización caso a caso y el despacho se confirma según comuna, volumen y ventana operativa.</p>
                 </details>
             </div>
         </div>
@@ -2307,9 +2331,11 @@
                     const tons = withWaste * productDensity[product];
                     const truckTrips = Math.max(1, Math.ceil(withWaste / 8));
                     const unitPrice = productPriceM3[product];
-                    const estimatedCostNet = unitPrice ? withWaste * unitPrice : null;
-                    const estimatedIva = estimatedCostNet ? estimatedCostNet * 0.19 : null;
-                    const estimatedCostWithIva = estimatedCostNet ? estimatedCostNet * 1.19 : null;
+                    const hasUnitPrice = typeof unitPrice === 'number' && Number.isFinite(unitPrice);
+                    const estimatedCostNet = hasUnitPrice ? withWaste * unitPrice : null;
+                    const estimatedIva = hasUnitPrice ? estimatedCostNet * 0.19 : null;
+                    const unitPriceWithIva = hasUnitPrice ? unitPrice * 1.19 : null;
+                    const estimatedCostWithIva = hasUnitPrice ? estimatedCostNet * 1.19 : null;
 
                     volumeResult.style.display = 'block';
                     volumeResult.innerHTML =
@@ -2318,8 +2344,8 @@
                         '<strong>Volumen recomendado (+12% merma técnica):</strong> ' + withWaste.toFixed(2) + ' m3<br>' +
                         '<strong>Tonelaje estimado:</strong> ' + tons.toFixed(2) + ' t<br>' +
                         '<strong>Logística referencial:</strong> ' + truckTrips + ' viaje(s) para camión de 8 m3.<br>' +
-                        (estimatedCost
-                            ? '<strong>Precio referencial en cantera (cargado, sin despacho):</strong> ' + formatCLP(unitPrice) + '/m3 neto + IVA<br><strong>Costo estimado neto:</strong> ' + formatCLP(estimatedCostNet) + '<br><strong>IVA (19%):</strong> ' + formatCLP(estimatedIva) + '<br><strong>Total estimado con IVA:</strong> ' + formatCLP(estimatedCostWithIva) + '<br><em>Nota:</em> Despachos y volúmenes muy grandes se revisan caso a caso al +56 9 9445 5713.'
+                        (hasUnitPrice
+                            ? '<strong>Precio referencial en cantera (cargado, sin despacho):</strong> ' + formatCLP(unitPriceWithIva) + '/m3 con IVA incluido<br><strong>Costo estimado neto:</strong> ' + formatCLP(estimatedCostNet) + '<br><strong>IVA (19%):</strong> ' + formatCLP(estimatedIva) + '<br><strong>Total estimado con IVA:</strong> ' + formatCLP(estimatedCostWithIva) + '<br><em>Nota:</em> Todos los valores finales mostrados consideran IVA. Despachos y volúmenes muy grandes se revisan caso a caso al +56 9 9445 5713.'
                             : '<strong>Precio:</strong> cotización caso a caso.<br><em>Nota:</em> Piedras decorativas, envíos a otras comunas y grandes volúmenes se revisan caso a caso al +56 9 9445 5713.');
 
                     setStage(1);
