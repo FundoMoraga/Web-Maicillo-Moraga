@@ -324,6 +324,7 @@
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/buttons.css">
     <link rel="stylesheet" href="styles.20260126-1.css?v=20260325-3">
+    <link rel="stylesheet" href="css/elite3d.css?v=20260327-1">
     <link rel="preload" as="image" href="1CDA5BE7-652E-48ED-866F-1F8EBD2EBEBF.png" fetchpriority="high">
     <link rel="preload" as="image" href="WhatsApp%20Image%202026-03-25%20at%208.20.20%20PM.jpeg" fetchpriority="high">
     <link rel="dns-prefetch" href="//fundo-moraga-ai-chat.onrender.com">
@@ -1943,7 +1944,7 @@
                     <li><a href="#usos" class="btn btn--tertiary btn--sm">Usos</a></li>
                     <li><a href="#agua" class="btn btn--tertiary btn--sm">Ahorro de Agua</a></li>
                     <li><a href="#herramientas" class="btn btn--tertiary btn--sm">Herramientas</a></li>
-                    <li><a href="https://wa.me/56994455713?text=Hola,%20quiero%20cotizar%20maicillo%20de%20Maicillo%20Moraga" target="_blank" rel="noopener" class="btn btn--tertiary btn--sm">Cotizar</a></li>
+                    <li><a href="https://wa.me/56994455713?text=Hola,%20quiero%20cotizar%20maicillo%20de%20Maicillo%20Moraga" target="_blank" rel="noopener" class="btn btn--tertiary btn--sm nav-cotizar-highlight">Cotizar</a></li>
                     <li><a href="mailto:contacto@fundomoraga.com" class="btn btn--tertiary btn--sm">Contacto</a></li>
                 </ul>
             </div>
@@ -1977,10 +1978,10 @@
                 Una solución Estética, Ecológica y Económica para tu proyecto
             </p>
             <div class="hero-actions animate-fade-in-delay-2">
-                <a href="#origen" class="btn btn--primary btn--lg">
+                <a href="#origen" class="btn btn--secondary btn--lg">
                     Descubre el maicillo
                 </a>
-                <a href="#herramientas" class="btn btn--primary btn--lg">
+                <a href="#herramientas" class="btn btn--secondary btn--lg">
                     Calcula tu proyecto
                 </a>
                 <a href="tel:+56994455713" class="btn btn--primary btn--lg">
@@ -2756,7 +2757,7 @@
     <section id="casos" class="interactive-section">
         <div class="container">
             <div class="section-header">
-                <h2 class="section-title">Registros de Nuestras Operaciones</h2>
+                <h2 class="section-title">Proyectos Realizados</h2>
                 <div class="title-underline"></div>
             </div>
             <div class="case-grid">
@@ -2849,7 +2850,7 @@
                 <div class="title-underline"></div>
             </div>
             <p id="smartCtaText">Cuéntanos superficie, uso y comuna. Te preparamos una propuesta técnica de suministro con los tres productos oficiales de Maicillo Moraga.</p>
-            <p id="smartCtaMeta" class="smart-cta-meta">Modo actual: exploración inicial</p>
+            <p id="smartCtaMeta" class="smart-cta-meta" style="display:none">Modo actual: exploración inicial</p>
             <div class="cta-buttons">
                 <a id="smartCtaPrimary" href="https://wa.me/56994455713?text=Hola,%20quiero%20asesoria%20tecnica%20de%20Maicillo%20Moraga" target="_blank" rel="noopener" class="btn btn--primary btn--lg">Hablar por WhatsApp</a>
                 <a id="smartCtaSecondary" href="mailto:contacto@fundomoraga.com?subject=Consulta%20tecnica%20-%20Maicillo%20Moraga" class="btn btn--secondary btn--lg">Enviar requerimiento técnico</a>
@@ -3046,6 +3047,7 @@
                 title.textContent = cfg.title;
                 text.textContent = cfg.text;
                 meta.textContent = cfg.meta;
+                meta.style.display = '';
                 primary.textContent = cfg.primaryText;
                 primary.href = cfg.primaryHref;
                 secondary.textContent = cfg.secondaryText;
@@ -3445,6 +3447,7 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js" defer></script>
+    <script src="js/elite3d.js" defer></script>
 
     <!-- ==========================================
          VISUALIZADOR IA — lógica de cliente

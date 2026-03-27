@@ -1,0 +1,439 @@
+/**
+ * ELITE 3D SYSTEM — Maicillo Moraga
+ * Unreal/WebGL-style visual depth layer
+ * Parent class .elite-3d on <html> is added by elite3d.js
+ * Loaded after buttons.css — safe override layer
+ */
+
+/* ================================================
+   ROOT TOKENS ADICIONALES
+   ================================================ */
+:root {
+    --e3d-gold-glow:     rgba(212, 175, 55, 0.52);
+    --e3d-gold-glow-sm:  rgba(212, 175, 55, 0.26);
+    --e3d-gold-glow-xs:  rgba(212, 175, 55, 0.14);
+    --e3d-press-face:    rgba(80, 55, 0, 0.58);
+}
+
+/* ================================================
+   3D BUTTONS — Physical depth + perspective press
+   ================================================ */
+
+/* Primary — dominante, dorado, sensación física de volumen */
+.elite-3d .btn--primary {
+    box-shadow:
+        0 5px 0 var(--e3d-press-face),
+        0 8px 18px rgba(0, 0, 0, 0.40),
+        0 0 28px var(--e3d-gold-glow-xs);
+    transition:
+        transform 0.20s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.20s ease,
+        filter 0.20s ease;
+}
+
+.elite-3d .btn--primary:hover {
+    transform: translateY(-4px) perspective(700px) translateZ(6px);
+    filter: brightness(1.08) saturate(1.06);
+    box-shadow:
+        0 9px 0 rgba(70, 48, 0, 0.48),
+        0 14px 32px rgba(0, 0, 0, 0.40),
+        0 0 42px var(--e3d-gold-glow),
+        0 0 80px var(--e3d-gold-glow-sm);
+}
+
+.elite-3d .btn--primary:active {
+    transform: translateY(2px) perspective(700px) translateZ(-3px);
+    filter: brightness(0.96);
+    box-shadow:
+        0 2px 0 rgba(80, 55, 0, 0.68),
+        0 4px 10px rgba(0, 0, 0, 0.42);
+    transition-duration: 0.07s;
+}
+
+/* Secondary */
+.elite-3d .btn--secondary {
+    box-shadow:
+        0 4px 0 rgba(212, 175, 55, 0.30),
+        0 8px 18px rgba(0, 0, 0, 0.28);
+    transition:
+        transform 0.20s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.20s ease,
+        filter 0.20s ease;
+}
+
+.elite-3d .btn--secondary:hover {
+    transform: translateY(-3px) perspective(700px) translateZ(4px);
+    box-shadow:
+        0 7px 0 rgba(212, 175, 55, 0.36),
+        0 14px 28px rgba(0, 0, 0, 0.28),
+        0 0 28px var(--e3d-gold-glow-sm);
+}
+
+.elite-3d .btn--secondary:active {
+    transform: translateY(1px) perspective(700px) translateZ(-2px);
+    box-shadow:
+        0 1px 0 rgba(212, 175, 55, 0.42),
+        0 3px 8px rgba(0, 0, 0, 0.25);
+    transition-duration: 0.07s;
+}
+
+/* Tertiary — subtle lift */
+.elite-3d .btn--tertiary:hover {
+    transform: translateY(-1px);
+    filter: none;
+}
+
+/* ================================================
+   NAV — Cotizar destacado
+   ================================================ */
+.nav-cotizar-highlight {
+    border: 1px solid rgba(212, 175, 55, 0.58) !important;
+    background: rgba(212, 175, 55, 0.09) !important;
+    color: #d4af37 !important;
+    border-radius: var(--radius-full) !important;
+    box-shadow:
+        0 0 12px rgba(212, 175, 55, 0.16),
+        0 2px 0 rgba(212, 175, 55, 0.12) !important;
+}
+
+.nav-cotizar-highlight:hover {
+    background: rgba(212, 175, 55, 0.18) !important;
+    color: #f0cc60 !important;
+    transform: translateY(-2px) !important;
+    box-shadow:
+        0 0 24px rgba(212, 175, 55, 0.38),
+        0 4px 0 rgba(212, 175, 55, 0.20) !important;
+}
+
+/* suprime la barra inferior en Cotizar — ya tiene borde */
+.nav-cotizar-highlight::after {
+    display: none !important;
+}
+
+/* ================================================
+   CARDS — 3D tilt + shimmer de luz dinámica
+   ================================================ */
+.elite-3d .uso-card,
+.elite-3d .module-card,
+.elite-3d .trust-card,
+.elite-3d .water-stat,
+.elite-3d .mineral-card,
+.elite-3d .stat-card {
+    transition: transform 0.55s cubic-bezier(0.23, 1, 0.32, 1),
+                box-shadow 0.55s ease;
+    will-change: transform;
+}
+
+/* Shimmer de luz: responde a var(--shine-x) y var(--shine-y) puestas por JS */
+.elite-3d .uso-card::after,
+.elite-3d .module-card::after,
+.elite-3d .trust-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+        circle at var(--shine-x, 50%) var(--shine-y, 50%),
+        rgba(255, 255, 255, 0.11) 0%,
+        transparent 52%
+    );
+    pointer-events: none;
+    z-index: 99;
+    opacity: 0;
+    transition: opacity 0.28s ease;
+}
+
+.elite-3d .uso-card:hover::after,
+.elite-3d .module-card:hover::after,
+.elite-3d .trust-card:hover::after {
+    opacity: 1;
+}
+
+/* ================================================
+   HERO TITLE — profundidad de texto estilo 3D
+   ================================================ */
+.elite-3d .maicillo-hero .hero-title {
+    text-shadow:
+        0 1px 0 rgba(0, 0, 0, 0.55),
+        0 2px 0 rgba(0, 0, 0, 0.40),
+        0 4px 4px rgba(0, 0, 0, 0.26),
+        0 9px 20px rgba(0, 0, 0, 0.38);
+    letter-spacing: -0.028em;
+}
+
+.elite-3d .maicillo-hero .hero-title .highlight {
+    text-shadow:
+        0 0 34px var(--e3d-gold-glow),
+        0 0 70px var(--e3d-gold-glow-sm),
+        0 2px 0 rgba(90, 60, 0, 0.58),
+        0 5px 12px rgba(0, 0, 0, 0.45);
+    display: inline-block;
+    animation: e3d-goldPulse 3.4s ease-in-out infinite;
+}
+
+@keyframes e3d-goldPulse {
+    0%, 100% {
+        text-shadow:
+            0 0 28px rgba(212, 175, 55, 0.38),
+            0 2px 0 rgba(90, 60, 0, 0.58),
+            0 5px 12px rgba(0, 0, 0, 0.45);
+    }
+    50% {
+        text-shadow:
+            0 0 58px rgba(212, 175, 55, 0.72),
+            0 0 96px rgba(212, 175, 55, 0.28),
+            0 2px 0 rgba(90, 60, 0, 0.58),
+            0 5px 12px rgba(0, 0, 0, 0.45);
+    }
+}
+
+/* ================================================
+   SECTION TITLES — tipografía más nítida
+   ================================================ */
+.elite-3d .section-title {
+    letter-spacing: -0.022em;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ================================================
+   STAT NUMBERS — glow dorado pulsante
+   ================================================ */
+.elite-3d .water-stat__value {
+    text-shadow:
+        0 0 18px var(--e3d-gold-glow),
+        0 2px 6px rgba(0, 0, 0, 0.38);
+    animation: e3d-statGlow 2.9s ease-in-out infinite alternate;
+}
+
+@keyframes e3d-statGlow {
+    from {
+        text-shadow:
+            0 0 14px rgba(212, 175, 55, 0.32),
+            0 2px 6px rgba(0, 0, 0, 0.38);
+    }
+    to {
+        text-shadow:
+            0 0 38px rgba(212, 175, 55, 0.68),
+            0 0 60px rgba(212, 175, 55, 0.22),
+            0 2px 6px rgba(0, 0, 0, 0.38);
+    }
+}
+
+/* ================================================
+   HERO BADGE — elevado, profundidad
+   ================================================ */
+.elite-3d .maicillo-badge {
+    box-shadow:
+        0 4px 16px rgba(212, 175, 55, 0.22),
+        0 0 0 1px rgba(212, 175, 55, 0.24) inset,
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.32s ease;
+}
+
+.elite-3d .maicillo-badge:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 10px 26px rgba(212, 175, 55, 0.38),
+        0 0 0 1px rgba(212, 175, 55, 0.40) inset;
+}
+
+/* ================================================
+   INFO CHIPS — float 3D en hover
+   ================================================ */
+.elite-3d .hero-info-chip {
+    transition:
+        transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.28s ease,
+        background 0.28s ease,
+        border-color 0.28s ease;
+}
+
+.elite-3d .hero-info-chip:hover {
+    transform: translateY(-3px);
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.32),
+        0 0 14px rgba(212, 175, 55, 0.24);
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* ================================================
+   HERO FEATURED PHOTOS — perspectiva en hover
+   ================================================ */
+.elite-3d .hero-featured-photo {
+    transition:
+        transform 0.38s cubic-bezier(0.23, 1, 0.32, 1),
+        box-shadow 0.38s ease;
+}
+
+.elite-3d .hero-featured-photo:hover {
+    transform: perspective(1000px) translateZ(14px) scale(1.012);
+    box-shadow:
+        0 32px 72px rgba(0, 0, 0, 0.54),
+        0 18px 48px rgba(212, 175, 55, 0.30) !important;
+}
+
+/* ================================================
+   TITLE UNDERLINE — glow de profundidad
+   ================================================ */
+.elite-3d .section-header .title-underline {
+    position: relative;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.42);
+}
+
+.elite-3d .section-header .title-underline::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 72%;
+    height: 160%;
+    background: rgba(212, 175, 55, 0.26);
+    filter: blur(7px);
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* ================================================
+   SCROLL TO TOP — físico 3D
+   ================================================ */
+.elite-3d #scrollToTop {
+    box-shadow:
+        0 6px 0 rgba(0, 0, 0, 0.38),
+        0 10px 24px rgba(0, 0, 0, 0.32);
+    transition:
+        transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.22s ease;
+}
+
+.elite-3d #scrollToTop:hover {
+    transform: translateY(-5px);
+    box-shadow:
+        0 11px 0 rgba(0, 0, 0, 0.30),
+        0 18px 32px rgba(0, 0, 0, 0.30);
+}
+
+/* ================================================
+   CHAT TOGGLE — elevado con borde áureo
+   ================================================ */
+.elite-3d .chat-toggle {
+    box-shadow:
+        0 8px 0 rgba(0, 0, 0, 0.32),
+        0 12px 28px rgba(0, 0, 0, 0.38),
+        0 0 0 2px rgba(212, 175, 55, 0.26);
+    transition:
+        transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.22s ease;
+}
+
+.elite-3d .chat-toggle:hover {
+    transform: translateY(-5px);
+    box-shadow:
+        0 13px 0 rgba(0, 0, 0, 0.26),
+        0 20px 42px rgba(0, 0, 0, 0.40),
+        0 0 0 3px rgba(212, 175, 55, 0.48),
+        0 0 32px rgba(212, 175, 55, 0.18);
+}
+
+/* ================================================
+   MINERAL BARS — borde de luz animado
+   ================================================ */
+.elite-3d .mineral-bar__fill {
+    overflow: visible;
+    position: relative;
+}
+
+.elite-3d .mineral-bar__fill::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: calc(100% + 4px);
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 999px;
+    filter: blur(3px);
+    pointer-events: none;
+    animation: e3d-barShimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes e3d-barShimmer {
+    0%, 100% { opacity: 0.30; }
+    50%       { opacity: 1.00; }
+}
+
+/* ================================================
+   NB-GENERATOR — integración de marca (sin borrar)
+   ================================================ */
+.nb-generator {
+    border: 1px solid rgba(212, 175, 55, 0.20);
+    border-radius: 16px;
+    padding: 24px 20px;
+    background: linear-gradient(145deg,
+        rgba(255, 252, 240, 0.85),
+        rgba(255, 248, 220, 0.65));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.nb-generator h3 {
+    color: var(--accent-dark, #b8941f);
+    font-size: 1.02rem;
+    font-weight: 700;
+    margin-bottom: 0.55rem;
+}
+
+.nb-generator > p {
+    color: var(--text-light, #6b7280);
+    margin: 0 0 0.75rem;
+}
+
+/* ================================================
+   SECTION REVEAL — estados iniciales (elite3d.js)
+   ================================================ */
+.elite-3d .e3d-hidden {
+    opacity: 0;
+    transform: translateY(30px) perspective(600px) rotateX(5deg);
+}
+
+.elite-3d .e3d-visible {
+    opacity: 1;
+    transform: translateY(0) perspective(600px) rotateX(0deg);
+}
+
+/* ================================================
+   REDUCED MOTION — desactiva todo lo animado
+   ================================================ */
+@media (prefers-reduced-motion: reduce) {
+    .elite-3d .btn--primary:hover,
+    .elite-3d .btn--secondary:hover,
+    .elite-3d .hero-featured-photo:hover,
+    .elite-3d .hero-info-chip:hover,
+    .elite-3d .maicillo-badge:hover,
+    .elite-3d .chat-toggle:hover,
+    .elite-3d #scrollToTop:hover,
+    .elite-3d .nav-cotizar-highlight:hover,
+    .elite-3d .uso-card,
+    .elite-3d .module-card,
+    .elite-3d .trust-card {
+        transform: none !important;
+        transition: none !important;
+    }
+
+    .elite-3d .maicillo-hero .hero-title .highlight,
+    .elite-3d .water-stat__value,
+    .elite-3d .mineral-bar__fill::after {
+        animation: none !important;
+    }
+
+    .elite-3d .e3d-hidden {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
