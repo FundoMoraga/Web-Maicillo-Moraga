@@ -2652,8 +2652,18 @@
 
                 <!-- Botón generar -->
                 <div class="viz-actions" id="vizActions" style="display:none;">
+                    <div id="vizPromptWrap" style="max-width:720px; margin:0 auto 1rem; text-align:left;">
+                        <label for="vizPromptInput" style="display:block; margin-bottom:0.45rem; font-weight:700; color:var(--text-dark, #1f2937);">Indicación opcional para Nano Banana 2</label>
+                        <input
+                            type="text"
+                            id="vizPromptInput"
+                            placeholder="Ej: Diseña un jardín seco con maicillo decorativo, bordes definidos y vegetación de bajo consumo hídrico"
+                            style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid #d1d5db;"
+                        >
+                        <p style="margin:0.55rem 0 0; color:var(--text-light, #6b7280); font-size:0.95rem;">Nano Banana usará tu foto como base y aplicará el diseño sobre esa misma imagen.</p>
+                    </div>
                     <button class="btn btn--primary btn--lg" id="vizGenerateBtn" type="button">
-                        ✨&nbsp;Generar visualización con maicillo
+                        ✨&nbsp;Generar diseño con Nano Banana
                     </button>
                 </div>
 
@@ -2687,21 +2697,6 @@
 
                 <!-- Error -->
                 <p class="viz-error" id="vizError" style="display:none;" role="alert"></p>
-
-                <div class="nb-generator" style="margin-top:2rem; text-align:center;">
-                    <h3 style="margin-bottom:0.6rem;">Crea una propuesta visual con Nano Banana 2</h3>
-                    <p style="margin:0 0 0.8rem; color:var(--text-light, #6b7280);">Describe un patio, jardín, acceso o sendero y la IA generará una idea visual fotorealista centrada en maicillo.</p>
-                    <input
-                        type="text"
-                        id="nbPrompt"
-                        placeholder="Ej: Patio contemporáneo con sendero de maicillo fino, bordes limpios y vegetación de bajo consumo hídrico"
-                        style="width:min(100%, 720px); padding:10px 12px; border-radius:10px; border:1px solid #d1d5db;"
-                    >
-                    <div style="margin-top:0.8rem;">
-                        <button id="nbGenerateBtn" class="btn btn--primary btn--md" type="button">Generar</button>
-                    </div>
-                    <div id="nbResult" style="margin-top:1rem;"></div>
-                </div>
             </div>
         </div>
     </section>
@@ -3475,9 +3470,7 @@
         const vizDownloadBtn= $('vizDownloadBtn');
         const vizNewBtn     = $('vizNewBtn');
         const vizError      = $('vizError');
-        const nbPrompt      = $('nbPrompt');
-        const nbGenerateBtn = $('nbGenerateBtn');
-        const nbResult      = $('nbResult');
+        const vizPromptInput = $('vizPromptInput');
 
         if (!vizUploadZone) return; // section not present
 
@@ -3498,6 +3491,7 @@
             selectedFile = null;
             originalDataUrl = null;
             vizFileInput.value = '';
+            if (vizPromptInput) vizPromptInput.value = '';
             vizDropArea.style.display = '';
             vizPreview.style.display = 'none';
             vizActions.style.display = 'none';
@@ -3569,11 +3563,12 @@
                 const comma = originalDataUrl.indexOf(',');
                 const imageBase64 = originalDataUrl.slice(comma + 1);
                 const mimeType = selectedFile.type;
+                const prompt = vizPromptInput ? vizPromptInput.value.trim() : '';
 
                 const resp = await fetch(`${VIZ_API_BASE}/api/visualize`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageBase64, mimeType }),
+                    body: JSON.stringify({ imageBase64, mimeType, prompt }),
                 });
 
                 let data;
@@ -3600,45 +3595,6 @@
                 showError(err.message || 'Error al conectar con el servicio. Intenta nuevamente.');
             }
         });
-
-        if (nbGenerateBtn && nbPrompt && nbResult) {
-            nbGenerateBtn.addEventListener('click', async () => {
-                const promptTexto = nbPrompt.value.trim();
-                if (!promptTexto) {
-                    alert('Por favor, escribe algo.');
-                    return;
-                }
-
-                nbGenerateBtn.disabled = true;
-                nbGenerateBtn.textContent = 'Generando...';
-                nbResult.innerHTML = '<p>Generando propuesta visual de maicillo...</p>';
-
-                try {
-                    const respuesta = await fetch(`${VIZ_API_BASE}/api/generar-imagen`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ prompt: promptTexto }),
-                    });
-
-                    const datos = await respuesta.json().catch(() => ({}));
-                    if (!respuesta.ok || !datos.imagen) {
-                        nbResult.innerHTML = `<p style="color:red;">Error: ${datos.error || 'No se pudo generar la imagen.'}</p>`;
-                        nbGenerateBtn.disabled = false;
-                        nbGenerateBtn.textContent = 'Generar';
-                        return;
-                    }
-
-                    const mimeType = datos.mimeType || 'image/jpeg';
-                    nbResult.innerHTML = `<img src="data:${mimeType};base64,${datos.imagen}" alt="Imagen generada" loading="lazy" decoding="async" style="max-width:100%; margin-top:20px; border-radius:8px;">`;
-                    nbGenerateBtn.disabled = false;
-                    nbGenerateBtn.textContent = 'Generar';
-                } catch (_error) {
-                    nbResult.innerHTML = '<p style="color:red;">Fallo de conexión.</p>';
-                    nbGenerateBtn.disabled = false;
-                    nbGenerateBtn.textContent = 'Generar';
-                }
-            });
-        }
     })();
     </script>
 

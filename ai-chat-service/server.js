@@ -561,10 +561,12 @@ app.post('/api/visualize', async (req, res) => {
     });
   }
 
-  const { imageBase64, mimeType } = req.body || {};
+  const { imageBase64, mimeType, prompt } = req.body || {};
   if (!imageBase64 || typeof imageBase64 !== 'string') {
     return res.status(400).json({ error: 'Se requiere imageBase64.' });
   }
+
+  const safePrompt = typeof prompt === 'string' ? prompt.trim().slice(0, 500) : '';
 
   const safeMime = ['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)
     ? mimeType
@@ -584,7 +586,11 @@ app.post('/api/visualize', async (req, res) => {
         {
           role: 'user',
           parts: [
-            { text: VISUALIZE_PROMPT },
+            {
+              text: safePrompt
+                ? `${VISUALIZE_PROMPT} Additional user design guidance: ${safePrompt}`
+                : VISUALIZE_PROMPT,
+            },
             { inlineData: { mimeType: safeMime, data: imageBase64 } },
           ],
         },
