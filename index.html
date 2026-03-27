@@ -1824,6 +1824,94 @@
                 padding: 5px 12px;
             }
         }
+
+        /* Safari iOS mobile breathing-room patch */
+        @supports (-webkit-touch-callout: none) {
+            @media (max-width: 900px) {
+                .container {
+                    padding-inline: clamp(14px, 4.5vw, 22px);
+                }
+
+                .nav-wrapper {
+                    padding-block: 14px;
+                    gap: 12px;
+                }
+
+                .nav-links {
+                    top: calc(74px + env(safe-area-inset-top, 0px));
+                    max-height: calc(100svh - (74px + env(safe-area-inset-top, 0px)));
+                    overflow-y: auto;
+                    -webkit-overflow-scrolling: touch;
+                    padding: 22px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+                    gap: 10px;
+                }
+
+                .nav-links li,
+                .nav-links a {
+                    width: 100%;
+                }
+
+                .nav-links a.btn {
+                    min-height: 46px;
+                    justify-content: center;
+                }
+
+                .maicillo-hero {
+                    min-height: max(760px, 100svh);
+                }
+
+                .maicillo-hero .hero-content {
+                    padding-inline: 12px;
+                    padding-block: clamp(112px, 20vw, 152px) clamp(24px, 6vw, 46px);
+                }
+
+                .hero-title {
+                    font-size: clamp(2rem, 8vw, 2.8rem);
+                    line-height: 1.08;
+                    margin-bottom: 16px;
+                }
+
+                .hero-subtitle {
+                    font-size: clamp(1rem, 4.2vw, 1.2rem);
+                    margin-bottom: 20px;
+                }
+
+                .hero-info-chips {
+                    margin-top: 1.1rem;
+                    gap: 8px;
+                }
+
+                .hero-info-chip {
+                    padding: 8px 12px;
+                    font-size: 0.74rem;
+                }
+
+                .hero-actions {
+                    margin-top: 0.5rem;
+                    gap: 10px;
+                }
+
+                .hero-actions .btn {
+                    min-width: 100%;
+                }
+
+                .article-section,
+                .interactive-section,
+                .maicillo-cta-section {
+                    padding: clamp(56px, 10.5vw, 84px) 0;
+                }
+
+                .chat-window {
+                    right: 10px;
+                    width: min(94vw, 410px);
+                    max-height: min(72svh, 560px);
+                }
+
+                .chat-widget {
+                    right: 12px;
+                }
+            }
+        }
     </style>
 </head>
 <body>
