@@ -2340,6 +2340,21 @@
 
                 <!-- Error -->
                 <p class="viz-error" id="vizError" style="display:none;" role="alert"></p>
+
+                <div class="nb-generator" style="margin-top:2rem; text-align:center;">
+                    <h3 style="margin-bottom:0.6rem;">Crea tu imagen con Nano Banana 2</h3>
+                    <p style="margin:0 0 0.8rem; color:var(--text-light, #6b7280);">Escribe una idea y genera una imagen desde texto.</p>
+                    <input
+                        type="text"
+                        id="nbPrompt"
+                        placeholder="Ej: Un astronauta montando a caballo en Marte..."
+                        style="width:min(100%, 720px); padding:10px 12px; border-radius:10px; border:1px solid #d1d5db;"
+                    >
+                    <div style="margin-top:0.8rem;">
+                        <button id="nbGenerateBtn" class="btn btn--primary btn--md" type="button">Generar</button>
+                    </div>
+                    <div id="nbResult" style="margin-top:1rem;"></div>
+                </div>
             </div>
         </div>
     </section>
@@ -3109,6 +3124,9 @@
         const vizDownloadBtn= $('vizDownloadBtn');
         const vizNewBtn     = $('vizNewBtn');
         const vizError      = $('vizError');
+        const nbPrompt      = $('nbPrompt');
+        const nbGenerateBtn = $('nbGenerateBtn');
+        const nbResult      = $('nbResult');
 
         if (!vizUploadZone) return; // section not present
 
@@ -3231,6 +3249,37 @@
                 showError(err.message || 'Error al conectar con el servicio. Intenta nuevamente.');
             }
         });
+
+        if (nbGenerateBtn && nbPrompt && nbResult) {
+            nbGenerateBtn.addEventListener('click', async () => {
+                const promptTexto = nbPrompt.value.trim();
+                if (!promptTexto) {
+                    alert('Por favor, escribe algo.');
+                    return;
+                }
+
+                nbResult.innerHTML = '<p>Cargando... Nano Banana 2 esta trabajando.</p>';
+
+                try {
+                    const respuesta = await fetch(`${VIZ_API_BASE}/api/generar-imagen`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt: promptTexto }),
+                    });
+
+                    const datos = await respuesta.json().catch(() => ({}));
+                    if (!respuesta.ok || !datos.imagen) {
+                        nbResult.innerHTML = `<p style="color:red;">Error: ${datos.error || 'No se pudo generar la imagen.'}</p>`;
+                        return;
+                    }
+
+                    const mimeType = datos.mimeType || 'image/jpeg';
+                    nbResult.innerHTML = `<img src="data:${mimeType};base64,${datos.imagen}" alt="Imagen generada" style="max-width:100%; margin-top:20px; border-radius:8px;">`;
+                } catch (_error) {
+                    nbResult.innerHTML = '<p style="color:red;">Fallo de conexión.</p>';
+                }
+            });
+        }
     })();
     </script>
 

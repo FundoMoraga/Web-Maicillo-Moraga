@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import OpenAI from 'openai';
 import { CosmosClient } from '@azure/cosmos';
+import { GoogleGenAI } from '@google/genai';
 
 const PORT = Number(process.env.PORT || 10000);
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
@@ -43,6 +44,7 @@ app.use(
 
 const hasOpenAI = Boolean(OPENAI_API_KEY);
 const openai = hasOpenAI ? new OpenAI({ apiKey: OPENAI_API_KEY, timeout: 30000 }) : null;
+const googleAI = GOOGLE_AI_API_KEY ? new GoogleGenAI({ apiKey: GOOGLE_AI_API_KEY }) : null;
 
 const COSMOS_ENDPOINT = readEnv('COSMOS_ENDPOINT');
 const COSMOS_KEY = readEnv('COSMOS_KEY');
@@ -520,18 +522,23 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-const VISUALIZE_PROMPT =
-  'You are a professional landscape architect and photorealistic image editor. ' +
-  'The user has provided a photo of their outdoor space (garden, pathway, courtyard, driveway, yard or similar). ' +
-  'Your task is to enhance and transform the image so it shows the finished, professionally designed result ' +
-  'with the inclusion of maicillo — a natural Chilean granodiorite decomposed granite with a warm ochre/golden-yellow sandy earth tone. ' +
-  'Apply maicillo as the primary ground cover across appropriate areas: pathways, garden beds, open ground zones, driveways or walkways. ' +
-  'The maicillo should look natural, compacted and polished — showcasing its characteristic ochre/amber/golden‑yellow color. ' +
-  'Also enhance the overall space with a subtle professional landscaping touch: clean edges, well-defined borders, ' +
-  'harmonious plants or existing vegetation improved, and overall a finished, elevated aesthetic. ' +
-  'Preserve the original perspective, architecture, structures and composition of the photo. ' +
-  'The result should look like a realistic photograph of the completed project, not a drawing or render. ' +
-  'Do not add any text, watermarks or overlays to the output image.';
+const LANDSCAPE_ARCHITECT_BASE_PROMPT =
+  'Act as a professional exterior landscape architect and photorealistic photo editor. ' +
+  'Always improve the provided photograph of a home exterior space (garden, pathway, patio, driveway, courtyard or similar) ' +
+  'with a refined landscape-design criterion. ' +
+  'When appropriate, generate a dry-garden style proposal that clearly reads as a designed garden intervention while fully respecting the original photo composition and scene structure. ' +
+  'Use visual standards from high-end professional landscaping publications and portfolio-style imagery (similar to elite references seen in professional image searches), ' +
+  'focusing on premium composition, material harmony, precise geometry, and polished finish quality. ' +
+  'Preserve the original composition, perspective, camera angle, architecture and existing structural elements of the photo. ' +
+  'Maicillo must always be the protagonist improvement element, clearly visible and intentionally designed: ' +
+  'use maicillo with a warm yellow/ochre tone as the principal ground treatment, creating elegant dry gardens, ' +
+  'well-leveled and aesthetic paths, clean edge definitions, controlled transitions between surfaces, and coherent high-end exterior finishes. ' +
+  'Prioritize realistic construction cues: proper compaction look, consistent granulometry appearance, drainage-friendly layout, and refined landscape zoning. ' +
+  'You may draw inspiration from professional references conceptually, but do not replicate any specific copyrighted composition or branded style verbatim. ' +
+  'The output must look like a realistic finished photograph, never an illustration. ' +
+  'Do not add text, logos, watermarks or graphic overlays.';
+
+const VISUALIZE_PROMPT = LANDSCAPE_ARCHITECT_BASE_PROMPT;
 
 app.post('/api/visualize', async (req, res) => {
   if (!GOOGLE_AI_API_KEY) {
@@ -554,11 +561,7 @@ app.post('/api/visualize', async (req, res) => {
     return res.status(413).json({ error: 'La imagen es demasiado grande. Usa una imagen de hasta 10 MB.' });
   }
 
-  // Model candidates — try in order until one succeeds
-  const GEMINI_MODELS = [
-    'gemini-3.1-flash-image-preview',
-    'gemini-2.5-flash-image',
-  ];
+  const GEMINI_MODELS = ['gemini-3.1-flash-image-preview'];
 
   const geminiBody = {
     contents: [
@@ -597,7 +600,7 @@ app.post('/api/visualize', async (req, res) => {
         lastStatus = geminiRes.status;
         lastErrText = await geminiRes.text().catch(() => '');
         console.error(`gemini_visualize_error model=${modelName} status=${lastStatus}`, lastErrText.slice(0, 500));
-        // 404/400 may indicate model or config incompatibility, so try fallback.
+        // single-model policy requested by the project
         if (geminiRes.status === 404 || geminiRes.status === 400) continue;
         break;
       }
@@ -645,6 +648,57 @@ app.post('/api/visualize', async (req, res) => {
     : 'Error al generar la imagen. Intenta con otra foto o en unos momentos.';
 
   return res.status(502).json({ error: userMsg });
+});
+
+app.post('/api/generar-imagen', async (req, res) => {
+  if (!googleAI) {
+    return res.status(500).json({
+      error: 'Servicio no configurado. Falta GEMINI_API_KEY, GOOGLE_AI_API_KEY o GOOGLE_API_KEY.',
+    });
+  }
+
+  const prompt = String(req.body?.prompt || '').trim();
+  if (!prompt) {
+    return res.status(400).json({ error: 'Debes enviar un prompt.' });
+  }
+
+  const enforcedPrompt = `${LANDSCAPE_ARCHITECT_BASE_PROMPT}\n\nUser request: ${prompt}`;
+
+  const modelName = 'gemini-3.1-flash-image-preview';
+
+  try {
+    const response = await googleAI.models.generateContent({
+      model: modelName,
+      contents: enforcedPrompt,
+      config: {
+        responseModalities: ['IMAGE'],
+      },
+    });
+
+    const parts = response?.candidates?.[0]?.content?.parts || [];
+    const imagePart = parts.find((part) => (
+      part?.inlineData?.data &&
+      String(part.inlineData.mimeType || '').startsWith('image/')
+    ));
+
+    if (!imagePart?.inlineData?.data) {
+      const reason = response?.candidates?.[0]?.finishReason || response?.promptFeedback?.blockReason || 'sin imagen';
+      return res.status(502).json({
+        error: `El modelo ${modelName} respondió sin imagen (${reason}).`,
+      });
+    }
+
+    return res.json({
+      imagen: imagePart.inlineData.data,
+      mimeType: imagePart.inlineData.mimeType || 'image/jpeg',
+    });
+  } catch (error) {
+    const lastError = error?.message || String(error);
+    console.error(`generar_imagen_error model=${modelName}`, lastError);
+    return res.status(502).json({
+      error: `Hubo un problema al generar la imagen con ${modelName}. ${lastError || 'Intenta de nuevo en unos segundos.'}`,
+    });
+  }
 });
 
 app.listen(PORT, () => {
