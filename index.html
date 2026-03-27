@@ -3210,10 +3210,15 @@
                     body: JSON.stringify({ imageBase64, mimeType }),
                 });
 
-                const data = await resp.json();
+                let data;
+                try {
+                    data = await resp.json();
+                } catch (_) {
+                    throw new Error(`Error de conexión (${resp.status}). El servidor puede estar iniciando — intenta en 30 segundos.`);
+                }
 
                 if (!resp.ok || !data.resultBase64) {
-                    throw new Error(data.error || 'No se pudo generar la imagen.');
+                    throw new Error(data.error || `Error ${resp.status}: No se pudo generar la imagen.`);
                 }
 
                 const resultSrc = `data:${data.resultMime || 'image/png'};base64,${data.resultBase64}`;

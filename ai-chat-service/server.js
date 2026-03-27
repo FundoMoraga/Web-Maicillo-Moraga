@@ -549,57 +549,79 @@ app.post('/api/visualize', async (req, res) => {
     return res.status(413).json({ error: 'La imagen es demasiado grande. Usa una imagen de hasta 10 MB.' });
   }
 
-  try {
-    const apiUrl =
-      `https://generativelanguage.googleapis.com/v1beta/models/` +
-      `gemini-2.0-flash-exp-image-generation:generateContent?key=${GOOGLE_AI_API_KEY}`;
+  // Model candidates — try in order until one succeeds
+  const GEMINI_MODELS = [
+    'gemini-2.0-flash-preview-image-generation',
+    'gemini-2.0-flash-exp-image-generation',
+  ];
 
-    const geminiBody = {
-      contents: [
-        {
-          parts: [
-            { text: VISUALIZE_PROMPT },
-            { inlineData: { mimeType: safeMime, data: imageBase64 } },
-          ],
-        },
-      ],
-      generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
-    };
+  const geminiBody = {
+    contents: [
+      {
+        parts: [
+          { text: VISUALIZE_PROMPT },
+          { inlineData: { mimeType: safeMime, data: imageBase64 } },
+        ],
+      },
+    ],
+    generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
+  };
 
-    const geminiRes = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiBody),
-      signal: AbortSignal.timeout(90_000),
-    });
+  let lastStatus = 0;
+  let lastErrText = '';
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text().catch(() => '');
-      console.error('gemini_visualize_error', geminiRes.status, errText.slice(0, 300));
-      return res.status(502).json({
-        error: 'Error al generar la imagen. Intenta con otra foto o en unos momentos.',
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      const apiUrl =
+        `https://generativelanguage.googleapis.com/v1beta/models/` +
+        `${modelName}:generateContent?key=${GOOGLE_AI_API_KEY}`;
+
+      const geminiRes = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(geminiBody),
+        signal: AbortSignal.timeout(90_000),
       });
-    }
 
-    const data = await geminiRes.json();
-    const imagePart = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
+      if (!geminiRes.ok) {
+        lastStatus = geminiRes.status;
+        lastErrText = await geminiRes.text().catch(() => '');
+        console.error(`gemini_visualize_error model=${modelName} status=${lastStatus}`, lastErrText.slice(0, 500));
+        // 404 = model not found → try next; other errors → break
+        if (geminiRes.status === 404) continue;
+        break;
+      }
 
-    if (!imagePart?.inlineData?.data) {
-      return res.status(502).json({
-        error: 'No se pudo generar la imagen. Intenta con otra foto.',
+      const data = await geminiRes.json();
+      const imagePart = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
+
+      if (!imagePart?.inlineData?.data) {
+        const blockReason = data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason || 'unknown';
+        console.error(`gemini_no_image model=${modelName} reason=${blockReason}`, JSON.stringify(data).slice(0, 400));
+        return res.status(502).json({
+          error: `No se pudo generar la imagen (${blockReason}). Intenta con otra foto.`,
+        });
+      }
+
+      console.log(`gemini_visualize_ok model=${modelName}`);
+      return res.json({
+        resultBase64: imagePart.inlineData.data,
+        resultMime: imagePart.inlineData.mimeType || 'image/png',
       });
+    } catch (fetchErr) {
+      console.error(`gemini_fetch_error model=${modelName}`, fetchErr?.message || fetchErr);
+      lastErrText = fetchErr?.message || 'fetch_error';
     }
-
-    return res.json({
-      resultBase64: imagePart.inlineData.data,
-      resultMime: imagePart.inlineData.mimeType || 'image/png',
-    });
-  } catch (error) {
-    console.error('visualize_error', error?.message || error);
-    return res.status(500).json({
-      error: 'No se pudo procesar la imagen. Intenta nuevamente.',
-    });
   }
+
+  // All models failed
+  const userMsg = lastStatus === 429
+    ? 'Límite de la API alcanzado. Intenta en unos minutos.'
+    : lastStatus >= 400 && lastStatus < 500
+    ? `Error de configuración (${lastStatus}). Contacta al administrador.`
+    : 'Error al generar la imagen. Intenta con otra foto o en unos momentos.';
+
+  return res.status(502).json({ error: userMsg });
 });
 
 app.listen(PORT, () => {
