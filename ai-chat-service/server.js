@@ -9,6 +9,7 @@ const PORT = Number(process.env.PORT || 10000);
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GOOGLE_AI_API_KEY =
+  readEnv('Google_API_KEY') ||
   readEnv('GOOGLE_AI_API_KEY') ||
   readEnv('GEMINI_API_KEY') ||
   readEnv('GOOGLE_API_KEY');
@@ -541,7 +542,7 @@ const LANDSCAPE_ARCHITECT_BASE_PROMPT =
 const VISUALIZE_PROMPT = LANDSCAPE_ARCHITECT_BASE_PROMPT;
 
 app.post('/api/visualize', async (req, res) => {
-  if (!GOOGLE_AI_API_KEY) {
+  if (!googleAI) {
     return res.status(500).json({
       error: 'Servicio de visualización no configurado. Falta GOOGLE_AI_API_KEY, GEMINI_API_KEY o GOOGLE_API_KEY.',
     });
@@ -561,93 +562,52 @@ app.post('/api/visualize', async (req, res) => {
     return res.status(413).json({ error: 'La imagen es demasiado grande. Usa una imagen de hasta 10 MB.' });
   }
 
-  const GEMINI_MODELS = ['gemini-3.1-flash-image-preview'];
+  const modelName = 'gemini-3.1-flash-image-preview';
 
-  const geminiBody = {
-    contents: [
-      {
-        parts: [
-          { text: VISUALIZE_PROMPT },
-          { inlineData: { mimeType: safeMime, data: imageBase64 } },
-        ],
+  try {
+    const response = await googleAI.models.generateContent({
+      model: modelName,
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: VISUALIZE_PROMPT },
+            { inlineData: { mimeType: safeMime, data: imageBase64 } },
+          ],
+        },
+      ],
+      config: {
+        responseModalities: ['IMAGE'],
       },
-    ],
-    generationConfig: {
-      responseModalities: ['IMAGE'],
-      imageConfig: {
-        imageSize: '1K',
-      },
-    },
-  };
+    });
 
-  let lastStatus = 0;
-  let lastErrText = '';
+    const parts = response?.candidates?.[0]?.content?.parts || [];
+    const imagePart = [...parts].reverse().find((part) => (
+      part?.inlineData?.data &&
+      String(part.inlineData.mimeType || '').startsWith('image/')
+    ));
 
-  for (const modelName of GEMINI_MODELS) {
-    try {
-      const apiUrl =
-        `https://generativelanguage.googleapis.com/v1beta/models/` +
-        `${modelName}:generateContent?key=${GOOGLE_AI_API_KEY}`;
-
-      const geminiRes = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(geminiBody),
-        signal: AbortSignal.timeout(90_000),
+    if (!imagePart?.inlineData?.data) {
+      const reason = response?.candidates?.[0]?.finishReason || response?.promptFeedback?.blockReason || 'sin imagen';
+      return res.status(502).json({
+        error: `No se pudo generar la imagen con ${modelName} (${reason}). Intenta con otra foto.`,
       });
-
-      if (!geminiRes.ok) {
-        lastStatus = geminiRes.status;
-        lastErrText = await geminiRes.text().catch(() => '');
-        console.error(`gemini_visualize_error model=${modelName} status=${lastStatus}`, lastErrText.slice(0, 500));
-        // single-model policy requested by the project
-        if (geminiRes.status === 404 || geminiRes.status === 400) continue;
-        break;
-      }
-
-      const data = await geminiRes.json();
-      const candidate = data?.candidates?.[0];
-      const parts = candidate?.content?.parts || [];
-      const imageParts = parts.filter((part) => (
-        part?.inlineData?.data &&
-        String(part.inlineData.mimeType || '').startsWith('image/') &&
-        !part?.thought
-      ));
-      const imagePart = imageParts[imageParts.length - 1];
-
-      if (!imagePart?.inlineData?.data) {
-        const blockReason = data?.promptFeedback?.blockReason || candidate?.finishReason || 'unknown';
-        const finishMessage = candidate?.finishMessage || '';
-        console.error(
-          `gemini_no_image model=${modelName} reason=${blockReason}`,
-          JSON.stringify(data).slice(0, 800),
-        );
-        return res.status(502).json({
-          error: finishMessage
-            ? `No se pudo generar la imagen (${blockReason}). ${finishMessage}`
-            : `No se pudo generar la imagen (${blockReason}). Intenta con otra foto.`,
-        });
-      }
-
-      console.log(`gemini_visualize_ok model=${modelName}`);
-      return res.json({
-        resultBase64: imagePart.inlineData.data,
-        resultMime: imagePart.inlineData.mimeType || 'image/png',
-      });
-    } catch (fetchErr) {
-      console.error(`gemini_fetch_error model=${modelName}`, fetchErr?.message || fetchErr);
-      lastErrText = fetchErr?.message || 'fetch_error';
     }
+
+    return res.json({
+      resultBase64: imagePart.inlineData.data,
+      resultMime: imagePart.inlineData.mimeType || 'image/png',
+    });
+  } catch (error) {
+    const msg = error?.message || String(error || 'unknown_error');
+    console.error(`gemini_visualize_error model=${modelName}`, msg);
+    const status = /429|quota|rate/i.test(msg) ? 429 : 502;
+    return res.status(status).json({
+      error: status === 429
+        ? 'Límite de la API alcanzado. Intenta en unos minutos.'
+        : `Error al generar la imagen con ${modelName}. ${msg}`,
+    });
   }
-
-  // All models failed
-  const userMsg = lastStatus === 429
-    ? 'Límite de la API alcanzado. Intenta en unos minutos.'
-    : lastStatus >= 400 && lastStatus < 500
-    ? `Error de configuración (${lastStatus}). ${lastErrText.slice(0, 160) || 'Revisa la API key y el modelo configurado.'}`
-    : 'Error al generar la imagen. Intenta con otra foto o en unos momentos.';
-
-  return res.status(502).json({ error: userMsg });
 });
 
 app.post('/api/generar-imagen', async (req, res) => {
