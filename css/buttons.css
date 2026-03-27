@@ -1,0 +1,343 @@
+/**
+ * BUTTON SYSTEM - Fundo Moraga
+ * Sistema unificado de botones
+ */
+
+/* ============================================
+   BUTTON BASE - ESTILOS COMUNES
+   ============================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: var(--btn-spacing-md);
+  font-family: 'Poppins', sans-serif;
+  font-weight: var(--btn-font-weight-bold);
+  font-size: var(--btn-font-size-md);
+  line-height: 1.5;
+  letter-spacing: var(--btn-letter-spacing-normal);
+  text-decoration: none;
+  text-align: center;
+  white-space: nowrap;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--transition-transform), filter var(--transition-filter), box-shadow var(--transition-box-shadow);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ============================================
+   BUTTON EFFECT - SHINE ANIMATION
+   ============================================ */
+
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: -120% 60% -120% -60%;
+  background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  transform: translateX(-120%);
+  transition: transform var(--transition-shine);
+  pointer-events: none;
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background:
+    radial-gradient(240px circle at var(--glow-x, 50%) var(--glow-y, 50%), rgba(255, 230, 163, 0.32), transparent 58%),
+    radial-gradient(300px circle at var(--glow-x, 50%) var(--glow-y, 50%), rgba(212, 175, 55, 0.18), transparent 64%);
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.btn:hover::after,
+.btn:focus-visible::after {
+  opacity: 1;
+}
+
+.btn:hover::before {
+  transform: translateX(120%);
+}
+
+/* ============================================
+   PRIMARY BUTTON - Hero CTAs
+   ============================================ */
+
+.btn--primary {
+  padding: var(--btn-spacing-lg);
+  font-size: var(--btn-font-size-lg);
+  background: var(--btn-bg-primary);
+  color: var(--btn-text-primary);
+  border: var(--btn-border-primary);
+  box-shadow: var(--shadow-lg), var(--shadow-gold-md);
+}
+
+.btn--primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06) saturate(1.05);
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.35), var(--shadow-gold-lg), 0 0 36px rgba(212, 175, 55, 0.35);
+}
+
+.btn--primary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-lg), var(--shadow-gold-md);
+}
+
+.btn--primary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.25), 0 20px 46px rgba(0, 0, 0, 0.35), var(--shadow-gold-lg);
+}
+
+/* ============================================
+   SECONDARY BUTTON - Navbar Reserva
+   ============================================ */
+
+.btn--secondary {
+  padding: var(--btn-spacing-md);
+  font-size: var(--btn-font-size-md);
+  background: var(--btn-bg-primary);
+  color: var(--btn-text-primary);
+  border: var(--btn-border-primary);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35), var(--shadow-gold-sm);
+}
+
+.btn--secondary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05) saturate(1.05);
+  box-shadow: 0 12px 34px rgba(212, 175, 55, 0.2), 0 18px 44px rgba(0, 0, 0, 0.58), 0 0 32px rgba(212, 175, 55, 0.28);
+}
+
+.btn--secondary:active {
+  transform: translateY(0);
+}
+
+.btn--secondary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.22), 0 12px 34px rgba(212, 175, 55, 0.2), 0 18px 44px rgba(0, 0, 0, 0.58);
+}
+
+/* ============================================
+   TERTIARY BUTTON - Nav Links
+   ============================================ */
+
+.btn--tertiary {
+  padding: var(--btn-spacing-xs);
+  font-size: var(--btn-font-size-sm);
+  background: transparent;
+  color: var(--btn-text-light);
+  border: none;
+  box-shadow: none;
+  font-weight: var(--btn-font-weight-base);
+  position: relative;
+}
+
+.btn--tertiary::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-gold-600);
+  transition: width var(--transition-base);
+}
+
+.btn--tertiary:hover {
+  color: var(--color-gold-600);
+  transform: none;
+  filter: none;
+}
+
+.btn--tertiary:hover::after {
+  width: 100%;
+}
+
+.btn--tertiary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-gold-600);
+  border-radius: 2px;
+}
+
+.btn--tertiary::before {
+  display: none;
+}
+
+/* ============================================
+   GHOST BUTTON - Alternativo minimalista
+   ============================================ */
+
+.btn--ghost {
+  padding: var(--btn-spacing-md);
+  background: transparent;
+  color: var(--btn-text-light);
+  border: 1px solid var(--color-gray-400);
+  box-shadow: none;
+}
+
+.btn--ghost:hover {
+  border-color: var(--color-gold-600);
+  color: var(--color-gold-600);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn--ghost:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-gold-600);
+}
+
+.btn--ghost::before {
+  display: none;
+}
+
+/* ============================================
+   SIZES - VARIANTES DE TAMAÑO
+   ============================================ */
+
+.btn--xs {
+  padding: 6px 10px;
+  font-size: var(--btn-font-size-xs);
+}
+
+.btn--sm {
+  padding: var(--btn-spacing-sm);
+  font-size: var(--btn-font-size-sm);
+}
+
+.btn--md {
+  padding: var(--btn-spacing-md);
+  font-size: var(--btn-font-size-md);
+}
+
+.btn--lg {
+  padding: var(--btn-spacing-lg);
+  font-size: var(--btn-font-size-lg);
+}
+
+/* ============================================
+   ICON BUTTON
+   ============================================ */
+
+.btn--icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  gap: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+.btn--icon svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
+}
+
+.btn--icon:hover {
+  background: rgba(212, 175, 55, 0.1);
+  border-color: var(--color-gold-600);
+}
+
+.btn--icon:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-gold-600);
+}
+
+/* ============================================
+   ACCESSIBILITY - Estados especiales
+   ============================================ */
+
+.btn:focus-visible {
+  outline: 3px solid var(--color-gold-600);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .btn::before {
+    animation: none !important;
+    transition: color 200ms !important;
+  }
+
+  .btn:hover {
+    transform: none;
+  }
+
+  .btn::before {
+    display: none;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Mobile adaptations
+   ============================================ */
+
+@media (max-width: 768px) {
+  .btn {
+    min-width: 44px;
+    min-height: 44px;
+    gap: 6px;
+  }
+
+  .btn--lg {
+    padding: 16px 32px;
+    font-size: var(--btn-font-size-md);
+  }
+
+  .btn::before {
+    opacity: 0.5;
+  }
+
+  .btn:hover::before {
+    transform: translateX(100%);
+  }
+}
+
+@media (max-width: 480px) {
+  .btn--md,
+  .btn--sm {
+    padding: 12px 20px;
+    font-size: var(--btn-font-size-sm);
+  }
+
+  .btn--tertiary {
+    padding: 8px 12px;
+  }
+}
+
+/* ============================================
+   CONTEXTO - Navbar adaptations
+   ============================================ */
+
+.navbar .btn--secondary,
+.navbar .btn--tertiary {
+  transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
+}
+
+.navbar .btn--secondary:hover {
+  transform: translateY(-1px);
+}
+
+.navbar.dark-nav .btn--primary {
+  padding: var(--btn-spacing-md);
+  font-size: var(--btn-font-size-md);
+}

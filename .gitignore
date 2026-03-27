@@ -1,0 +1,14 @@
+# Imágenes temporales / de trabajo
+Generated Image*
+WhatsApp Image*
+7B3ADF4D-0543-4898-8EE9-FBF12A134226.PNG
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+*.swp
+*.swo
