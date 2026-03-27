@@ -1253,6 +1253,55 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* =============================================
+           CLIENTES / LOGOS SECTION
+           ============================================= */
+        .clients-section {
+            padding: clamp(40px, 6vw, 72px) 0;
+            background: #fff;
+            border-top: 1px solid rgba(212, 175, 55, 0.15);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+        }
+
+        .clients-heading {
+            text-align: center;
+            font-size: clamp(0.72rem, 1.3vw, 0.85rem);
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-light, #6b7280);
+            margin-bottom: clamp(28px, 4vw, 48px);
+        }
+
+        .clients-logos {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(28px, 5vw, 64px);
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .clients-logos li {
+            flex: 0 0 auto;
+        }
+
+        .clients-logos img {
+            height: clamp(40px, 6vw, 70px);
+            width: auto;
+            max-width: 160px;
+            object-fit: contain;
+            filter: grayscale(1) opacity(0.60);
+            transition: filter 0.35s ease, transform 0.35s ease;
+        }
+
+        .clients-logos img:hover {
+            filter: grayscale(0) opacity(1);
+            transform: scale(1.06);
+        }
     </style>
 </head>
 <body>
@@ -1361,6 +1410,22 @@
         <div class="scroll-indicator">
             <span>Scroll</span>
             <div class="scroll-line"></div>
+        </div>
+    </section>
+
+
+    <!-- ===========================
+         CLIENTES
+         =========================== -->
+    <section class="clients-section" aria-label="Empresas que confiaron en nosotros">
+        <div class="container">
+            <p class="clients-heading">Empresas que Confiaron en Nosotros</p>
+            <ul class="clients-logos">
+                <li><img src="CC6EBFAA-9221-4EDB-A95B-2F368363B223.PNG" alt="Cliente" loading="lazy"></li>
+                <li><img src="7B3ADF4D-0543-4898-8EE9-FBF12A134226%20(1).PNG" alt="Cliente" loading="lazy"></li>
+                <li><img src="464D2244-8DCE-4E8D-A91E-1A7DC4325DFE%20(1).PNG" alt="Cliente" loading="lazy"></li>
+                <li><img src="C2605FDA-B34C-4483-AB14-EAE9AD9DC7D0%20(4).PNG" alt="Cliente" loading="lazy"></li>
+            </ul>
         </div>
     </section>
 
