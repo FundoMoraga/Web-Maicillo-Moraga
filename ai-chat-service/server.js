@@ -551,8 +551,8 @@ app.post('/api/visualize', async (req, res) => {
 
   // Model candidates — try in order until one succeeds
   const GEMINI_MODELS = [
+    'gemini-3.1-flash-image-preview',
     'gemini-2.5-flash-image',
-    'gemini-2.0-flash-preview-image-generation',
   ];
 
   const geminiBody = {
