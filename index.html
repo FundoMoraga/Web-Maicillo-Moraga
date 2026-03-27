@@ -110,7 +110,7 @@
                 radial-gradient(ellipse 80% 60% at 20% 70%, rgba(120, 80, 20, 0.35) 0%, transparent 55%),
                 linear-gradient(160deg, #0f0a04 0%, #2a1a06 35%, #1c1108 65%, #0d0804 100%);
             z-index: 0;
-            opacity: 0.18;
+            opacity: 0.08;
         }
 
         .maicillo-hero-video-wrap {
@@ -126,8 +126,10 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            filter: saturate(1.12) contrast(1.02) brightness(0.84);
+            object-position: center center;
+            filter: saturate(1.08) contrast(1.01) brightness(0.9);
             transform: scale(1.05);
+            background: #120c05;
         }
 
         #hero3dCanvas {
@@ -1279,9 +1281,7 @@
     <section class="hero maicillo-hero" id="inicio">
         <div class="maicillo-hero-bg" aria-hidden="true"></div>
         <div class="maicillo-hero-video-wrap" aria-hidden="true">
-            <video class="maicillo-hero-video" autoplay muted loop playsinline defaultMuted preload="auto" disablepictureinpicture aria-hidden="true">
-                <source src="IMG_4516%20(1).mov" type="video/quicktime">
-            </video>
+            <video class="maicillo-hero-video" src="IMG_4516%20(1).mov" autoplay muted loop playsinline defaultMuted preload="auto" disablepictureinpicture aria-hidden="true"></video>
         </div>
         <canvas id="hero3dCanvas" aria-hidden="true"></canvas>
         <div class="maicillo-hero-texture" aria-hidden="true"></div>
