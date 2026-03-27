@@ -1306,6 +1306,169 @@
         }
 
         /* =============================================
+           VISUALIZADOR IA — "¿Cómo se vería tu proyecto?"
+           ============================================= */
+
+        .viz-card {
+            max-width: 880px;
+            margin: 0 auto;
+        }
+
+        .viz-upload-zone {
+            background: #fffdf9;
+            border: 2px dashed #c9b88a;
+            border-radius: 20px;
+            padding: clamp(32px, 5vw, 56px) 24px;
+            text-align: center;
+            transition: border-color 0.25s, background 0.25s;
+        }
+
+        .viz-upload-zone.drag-over {
+            border-color: var(--accent-color, #d4af37);
+            background: rgba(212, 175, 55, 0.06);
+        }
+
+        .viz-drop-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            background: rgba(212, 175, 55, 0.12);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .viz-drop-icon svg {
+            width: 32px;
+            height: 32px;
+            fill: none;
+            stroke: var(--accent-color, #d4af37);
+            stroke-width: 1.8;
+        }
+
+        .viz-drop-label {
+            font-size: 1rem;
+            color: #4b5563;
+            margin-bottom: 14px;
+        }
+
+        .viz-drop-hint {
+            margin-top: 12px;
+            font-size: 0.78rem;
+            color: #9ca3af;
+        }
+
+        .viz-preview {
+            position: relative;
+        }
+
+        .viz-preview img {
+            width: 100%;
+            max-height: 420px;
+            object-fit: contain;
+            border-radius: 14px;
+            display: block;
+        }
+
+        .viz-change-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            background: none;
+            border: 1px solid #d1c4a0;
+            border-radius: 999px;
+            padding: 7px 16px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            color: #6b5e42;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .viz-change-btn:hover { background: rgba(212, 175, 55, 0.08); }
+
+        .viz-actions {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .viz-loading {
+            margin-top: 28px;
+            text-align: center;
+            color: #6b5e42;
+        }
+
+        .viz-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(212, 175, 55, 0.25);
+            border-top-color: var(--accent-color, #d4af37);
+            border-radius: 50%;
+            animation: vizSpin 0.85s linear infinite;
+            margin: 0 auto 14px;
+        }
+
+        @keyframes vizSpin { to { transform: rotate(360deg); } }
+
+        .viz-result {
+            margin-top: 32px;
+        }
+
+        .viz-compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .viz-compare { grid-template-columns: 1fr; }
+        }
+
+        .viz-compare-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .viz-compare-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: #9ca3af;
+        }
+
+        .viz-compare-item img {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid #ece7dc;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        .viz-result-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .viz-error {
+            margin-top: 16px;
+            color: #dc2626;
+            font-size: 0.9rem;
+            text-align: center;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 12px 16px;
+        }
+
+        /* =============================================
            MOBILE ELITE OPTIMIZATIONS — Safari / iOS
            ============================================= */
 
@@ -2101,6 +2264,89 @@
         </div>
     </section>
 
+    <!-- ==========================================
+         VISUALIZADOR IA DE PROYECTOS
+         ========================================== -->
+    <section id="visualizador" class="interactive-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">¿Quieres ver cómo se vería tu proyecto terminado?</h2>
+                <div class="title-underline"></div>
+            </div>
+            <p class="article-lead" style="max-width:680px; margin:0 auto 2.4rem; text-align:center;">
+                Sube una foto de tu jardín, patio, entrada o camino exterior y nuestra IA generará una visualización realista de cómo quedaría con maicillo instalado y un diseño profesional de paisajismo.
+            </p>
+            <div class="viz-card">
+                <!-- Zona de carga -->
+                <div class="viz-upload-zone" id="vizUploadZone">
+                    <input type="file" id="vizFileInput" accept="image/jpeg,image/png,image/webp" aria-label="Subir fotografía de tu espacio">
+
+                    <!-- Estado: sin foto -->
+                    <div id="vizDropArea">
+                        <div class="viz-drop-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <p class="viz-drop-label">Arrastra tu foto aquí o</p>
+                        <button class="btn btn--primary btn--md" id="vizSelectBtn" type="button">
+                            Sube tu Foto
+                        </button>
+                        <p class="viz-drop-hint">JPG, PNG o WEBP · máx. 10 MB</p>
+                    </div>
+
+                    <!-- Estado: foto seleccionada -->
+                    <div id="vizPreview" style="display:none;">
+                        <img id="vizPreviewImg" alt="Vista previa de tu espacio">
+                        <button class="viz-change-btn" id="vizChangeBtn" type="button">
+                            ↩ Cambiar foto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botón generar -->
+                <div class="viz-actions" id="vizActions" style="display:none;">
+                    <button class="btn btn--primary btn--lg" id="vizGenerateBtn" type="button">
+                        ✨&nbsp;Generar visualización con maicillo
+                    </button>
+                </div>
+
+                <!-- Cargando -->
+                <div class="viz-loading" id="vizLoading" style="display:none;" aria-live="polite">
+                    <div class="viz-spinner" role="status" aria-label="Generando imagen"></div>
+                    <p>La IA está diseñando tu proyecto… puede tomar hasta 40 segundos.</p>
+                </div>
+
+                <!-- Resultado -->
+                <div class="viz-result" id="vizResult" style="display:none;">
+                    <div class="viz-compare">
+                        <div class="viz-compare-item">
+                            <span class="viz-compare-label">Tu foto original</span>
+                            <img id="vizOriginalImg" alt="Foto original">
+                        </div>
+                        <div class="viz-compare-item">
+                            <span class="viz-compare-label">Con maicillo instalado</span>
+                            <img id="vizResultImg" alt="Visualización con maicillo">
+                        </div>
+                    </div>
+                    <div class="viz-result-actions">
+                        <a id="vizDownloadBtn" class="btn btn--primary btn--md" download="mi-proyecto-maicillo.png">
+                            ⬇ Descargar imagen
+                        </a>
+                        <button class="btn btn--secondary btn--md" id="vizNewBtn" type="button">
+                            Nueva visualización
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error -->
+                <p class="viz-error" id="vizError" style="display:none;" role="alert"></p>
+            </div>
+        </div>
+    </section>
+
     <section id="cobertura" class="interactive-section interactive-section--tint">
         <div class="container">
             <div class="section-header">
@@ -2839,6 +3085,153 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js" defer></script>
+
+    <!-- ==========================================
+         VISUALIZADOR IA — lógica de cliente
+         ========================================== -->
+    <script>
+    (function () {
+        'use strict';
+
+        const VIZ_API_BASE = 'https://fundo-moraga-ai-chat.onrender.com';
+
+        const $ = (id) => document.getElementById(id);
+        const vizUploadZone = $('vizUploadZone');
+        const vizFileInput  = $('vizFileInput');
+        const vizSelectBtn  = $('vizSelectBtn');
+        const vizDropArea   = $('vizDropArea');
+        const vizPreview    = $('vizPreview');
+        const vizPreviewImg = $('vizPreviewImg');
+        const vizChangeBtn  = $('vizChangeBtn');
+        const vizActions    = $('vizActions');
+        const vizGenerateBtn= $('vizGenerateBtn');
+        const vizLoading    = $('vizLoading');
+        const vizResult     = $('vizResult');
+        const vizOriginalImg= $('vizOriginalImg');
+        const vizResultImg  = $('vizResultImg');
+        const vizDownloadBtn= $('vizDownloadBtn');
+        const vizNewBtn     = $('vizNewBtn');
+        const vizError      = $('vizError');
+
+        if (!vizUploadZone) return; // section not present
+
+        let selectedFile = null;
+        let originalDataUrl = null;
+
+        function showError(msg) {
+            vizError.textContent = msg;
+            vizError.style.display = 'block';
+        }
+
+        function clearError() {
+            vizError.style.display = 'none';
+            vizError.textContent = '';
+        }
+
+        function resetToUpload() {
+            selectedFile = null;
+            originalDataUrl = null;
+            vizFileInput.value = '';
+            vizDropArea.style.display = '';
+            vizPreview.style.display = 'none';
+            vizActions.style.display = 'none';
+            vizLoading.style.display = 'none';
+            vizResult.style.display = 'none';
+            clearError();
+        }
+
+        function handleFile(file) {
+            if (!file) return;
+            if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                showError('Formato no válido. Usa una imagen JPG, PNG o WEBP.');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                showError('La imagen supera el límite de 10 MB. Elige una más pequeña.');
+                return;
+            }
+            clearError();
+            selectedFile = file;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                originalDataUrl = e.target.result;
+                vizPreviewImg.src = originalDataUrl;
+                vizDropArea.style.display = 'none';
+                vizPreview.style.display = '';
+                vizActions.style.display = '';
+                vizResult.style.display = 'none';
+                vizLoading.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        vizSelectBtn.addEventListener('click', () => vizFileInput.click());
+        vizChangeBtn.addEventListener('click', resetToUpload);
+        vizNewBtn.addEventListener('click', resetToUpload);
+
+        vizFileInput.addEventListener('change', () => {
+            if (vizFileInput.files && vizFileInput.files[0]) {
+                handleFile(vizFileInput.files[0]);
+            }
+        });
+
+        // Drag & drop
+        vizUploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            vizUploadZone.classList.add('drag-over');
+        });
+        ['dragleave', 'dragend'].forEach((ev) =>
+            vizUploadZone.addEventListener(ev, () => vizUploadZone.classList.remove('drag-over'))
+        );
+        vizUploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            vizUploadZone.classList.remove('drag-over');
+            const file = e.dataTransfer?.files?.[0];
+            if (file) handleFile(file);
+        });
+
+        vizGenerateBtn.addEventListener('click', async () => {
+            if (!selectedFile || !originalDataUrl) return;
+            clearError();
+            vizActions.style.display = 'none';
+            vizLoading.style.display = '';
+            vizResult.style.display = 'none';
+
+            try {
+                // Strip the "data:image/xxx;base64," prefix
+                const comma = originalDataUrl.indexOf(',');
+                const imageBase64 = originalDataUrl.slice(comma + 1);
+                const mimeType = selectedFile.type;
+
+                const resp = await fetch(`${VIZ_API_BASE}/api/visualize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageBase64, mimeType }),
+                });
+
+                const data = await resp.json();
+
+                if (!resp.ok || !data.resultBase64) {
+                    throw new Error(data.error || 'No se pudo generar la imagen.');
+                }
+
+                const resultSrc = `data:${data.resultMime || 'image/png'};base64,${data.resultBase64}`;
+                vizOriginalImg.src = originalDataUrl;
+                vizResultImg.src = resultSrc;
+                vizDownloadBtn.href = resultSrc;
+                vizLoading.style.display = 'none';
+                vizResult.style.display = '';
+                vizActions.style.display = '';
+            } catch (err) {
+                vizLoading.style.display = 'none';
+                vizActions.style.display = '';
+                showError(err.message || 'Error al conectar con el servicio. Intenta nuevamente.');
+            }
+        });
+    })();
+    </script>
+
     <script>
         (function () {
             'use strict';

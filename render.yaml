@@ -19,6 +19,8 @@ services:
     envVars:
       - key: OPENAI_API_KEY
         sync: false
+      - key: GOOGLE_AI_API_KEY
+        sync: false
       - key: OPENAI_MODEL
         value: gpt-5.4
       - key: COSMOS_ENDPOINT

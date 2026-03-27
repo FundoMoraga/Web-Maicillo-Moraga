@@ -7,6 +7,7 @@ import { CosmosClient } from '@azure/cosmos';
 const PORT = Number(process.env.PORT || 10000);
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const GOOGLE_AI_API_KEY = readEnv('GOOGLE_AI_API_KEY');
 const RESEND_API_KEY = readEnv('RESEND_API_KEY');
 const RESERVATION_NOTIFY_EMAIL = readEnv('RESERVATION_NOTIFY_EMAIL') || 'contacto@fundomoraga.com';
 const RESERVATION_FROM_EMAIL = readEnv('RESERVATION_FROM_EMAIL') || 'reservas@fundomoraga.com';
@@ -20,11 +21,13 @@ const ALLOWED_ORIGINS = [
   'https://fundomoraga.com',
   'https://www.fundomoraga.com',
   'https://web-fundo-moraga.onrender.com',
+  'https://maicillomoraga.com',
+  'https://www.maicillomoraga.com',
   ...(process.env.CORS_ORIGINS || '').split(',').map((x) => x.trim()).filter(Boolean),
 ];
 
 const app = express();
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '12mb' }));
 app.use(
   cors({
     origin(origin, cb) {
@@ -510,6 +513,91 @@ app.post('/chat', async (req, res) => {
     console.error('chat_error', error?.message || error);
     return res.status(500).json({
       error: 'No pude responder en este momento. Intenta nuevamente en unos segundos.',
+    });
+  }
+});
+
+const VISUALIZE_PROMPT =
+  'You are a professional landscape architect and photorealistic image editor. ' +
+  'The user has provided a photo of their outdoor space (garden, pathway, courtyard, driveway, yard or similar). ' +
+  'Your task is to enhance and transform the image so it shows the finished, professionally designed result ' +
+  'with the inclusion of maicillo — a natural Chilean granodiorite decomposed granite with a warm ochre/golden-yellow sandy earth tone. ' +
+  'Apply maicillo as the primary ground cover across appropriate areas: pathways, garden beds, open ground zones, driveways or walkways. ' +
+  'The maicillo should look natural, compacted and polished — showcasing its characteristic ochre/amber/golden‑yellow color. ' +
+  'Also enhance the overall space with a subtle professional landscaping touch: clean edges, well-defined borders, ' +
+  'harmonious plants or existing vegetation improved, and overall a finished, elevated aesthetic. ' +
+  'Preserve the original perspective, architecture, structures and composition of the photo. ' +
+  'The result should look like a realistic photograph of the completed project, not a drawing or render. ' +
+  'Do not add any text, watermarks or overlays to the output image.';
+
+app.post('/api/visualize', async (req, res) => {
+  if (!GOOGLE_AI_API_KEY) {
+    return res.status(500).json({ error: 'Servicio de visualización no configurado.' });
+  }
+
+  const { imageBase64, mimeType } = req.body || {};
+  if (!imageBase64 || typeof imageBase64 !== 'string') {
+    return res.status(400).json({ error: 'Se requiere imageBase64.' });
+  }
+
+  const safeMime = ['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)
+    ? mimeType
+    : 'image/jpeg';
+
+  // Validate rough size (base64 of 10MB image ≈ 13.6M chars)
+  if (imageBase64.length > 14_000_000) {
+    return res.status(413).json({ error: 'La imagen es demasiado grande. Usa una imagen de hasta 10 MB.' });
+  }
+
+  try {
+    const apiUrl =
+      `https://generativelanguage.googleapis.com/v1beta/models/` +
+      `gemini-2.0-flash-exp-image-generation:generateContent?key=${GOOGLE_AI_API_KEY}`;
+
+    const geminiBody = {
+      contents: [
+        {
+          parts: [
+            { text: VISUALIZE_PROMPT },
+            { inlineData: { mimeType: safeMime, data: imageBase64 } },
+          ],
+        },
+      ],
+      generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
+    };
+
+    const geminiRes = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(geminiBody),
+      signal: AbortSignal.timeout(90_000),
+    });
+
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text().catch(() => '');
+      console.error('gemini_visualize_error', geminiRes.status, errText.slice(0, 300));
+      return res.status(502).json({
+        error: 'Error al generar la imagen. Intenta con otra foto o en unos momentos.',
+      });
+    }
+
+    const data = await geminiRes.json();
+    const imagePart = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
+
+    if (!imagePart?.inlineData?.data) {
+      return res.status(502).json({
+        error: 'No se pudo generar la imagen. Intenta con otra foto.',
+      });
+    }
+
+    return res.json({
+      resultBase64: imagePart.inlineData.data,
+      resultMime: imagePart.inlineData.mimeType || 'image/png',
+    });
+  } catch (error) {
+    console.error('visualize_error', error?.message || error);
+    return res.status(500).json({
+      error: 'No se pudo procesar la imagen. Intenta nuevamente.',
     });
   }
 });
