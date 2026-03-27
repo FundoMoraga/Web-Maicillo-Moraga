@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Maicillo Moraga – Granito descompuesto de alta calidad extraído en Batuco, Lampa. Usos en paisajismo, vialidad, drenaje y ahorro de agua. A minutos de Santiago.">
     <meta name="keywords" content="maicillo, granito descompuesto, maicillo Santiago, maicillo Batuco, maicillo paisajismo, maicillo drenaje, maicillo Moraga, Lampa, maicillo permeable">
     <link rel="icon" type="image/png" href="1CDA5BE7-652E-48ED-866F-1F8EBD2EBEBF.png">
@@ -223,6 +223,7 @@
             padding: 8px 20px;
             font-size: 0.82rem;
             color: rgba(255,255,255,0.85);
+            -webkit-backdrop-filter: blur(6px);
             backdrop-filter: blur(6px);
         }
 
@@ -245,6 +246,7 @@
             border: 1px solid rgba(255, 255, 255, 0.24);
             box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), 0 12px 34px rgba(212, 175, 55, 0.2);
             background: rgba(255, 255, 255, 0.04);
+            -webkit-backdrop-filter: blur(2px);
             backdrop-filter: blur(2px);
             aspect-ratio: 16 / 10;
         }
@@ -1302,6 +1304,107 @@
             filter: grayscale(0) opacity(1);
             transform: scale(1.06);
         }
+
+        /* =============================================
+           MOBILE ELITE OPTIMIZATIONS — Safari / iOS
+           ============================================= */
+
+        /* Remove 300ms iOS tap delay & blue flash on every touch */
+        html {
+            -webkit-tap-highlight-color: transparent;
+        }
+        a, button, [role="button"], label, summary,
+        .btn, .comp-btn, .chat-toggle, .mobile-menu-toggle,
+        #chatSend, #scrollToTop {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* WCAG 2.5.5 — minimum 44 × 44 px tap target */
+        .btn, .comp-btn, .chat-toggle,
+        #chatSend, #scrollToTop, .mobile-menu-toggle,
+        .faq-item summary {
+            min-height: 44px;
+        }
+
+        /* iPhone notch / home indicator — scroll-indicator sits above home bar */
+        .scroll-indicator {
+            bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+        }
+
+        /* Chat widget above home indicator on iPhone */
+        .chat-widget {
+            bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+        }
+
+        /* GPU compositing hints for video + canvas layers */
+        .maicillo-hero-video,
+        #hero3dCanvas,
+        .maicillo-hero-texture {
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            will-change: opacity;
+        }
+
+        /* Disable expensive hover transforms on touch devices */
+        @media (hover: none) {
+            .hero-featured-photo:hover img {
+                transform: scale(1.01);
+            }
+            .clients-logos img:hover {
+                filter: grayscale(1) opacity(0.60);
+                transform: none;
+            }
+        }
+
+        /* Prevent iOS Safari auto-zoom on input focus (needs ≥ 16 px) */
+        @media (max-width: 768px) {
+            .module-form input,
+            .module-form select,
+            .chat-footer input,
+            #chatInput {
+                font-size: 16px;
+            }
+        }
+
+        /* Prevent sections from creating horizontal overflow on mobile */
+        .section-header,
+        .article-layout,
+        .module-grid,
+        .usos-grid,
+        .water-stats,
+        .trust-grid,
+        .case-grid,
+        .clients-section {
+            overflow-x: hidden;
+        }
+
+        /* Momentum scrolling for overflow containers on iOS */
+        .tech-table-wrap,
+        .chat-body,
+        .zone-chip-list {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Small phones — tighten hero vertical spacing */
+        @media (max-width: 480px) {
+            .maicillo-hero .hero-content {
+                padding-block: clamp(80px, 14vw, 100px) clamp(20px, 4vw, 40px);
+            }
+            .hero-featured-gallery {
+                gap: 8px;
+            }
+            .hero-actions {
+                gap: 8px;
+            }
+            .hero-actions .btn {
+                min-width: min(100%, 280px);
+            }
+            .maicillo-badge {
+                font-size: 0.72rem;
+                padding: 5px 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1346,7 +1449,7 @@
     <section class="hero maicillo-hero" id="inicio">
         <div class="maicillo-hero-bg" aria-hidden="true"></div>
         <div class="maicillo-hero-video-wrap" aria-hidden="true">
-            <video class="maicillo-hero-video" src="IMG_4516%20(1).mov" autoplay muted loop playsinline defaultMuted preload="auto" disablepictureinpicture aria-hidden="true"></video>
+            <video class="maicillo-hero-video" src="IMG_4516%20(1).mov" autoplay muted loop playsinline defaultMuted preload="metadata" disablepictureinpicture aria-hidden="true"></video>
         </div>
         <canvas id="hero3dCanvas" aria-hidden="true"></canvas>
         <div class="maicillo-hero-texture" aria-hidden="true"></div>
@@ -2749,13 +2852,14 @@
                 if (reduceMotion) return true;
 
                 const THREE = window.THREE;
+                const isMobile = window.innerWidth <= 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                 const renderer = new THREE.WebGLRenderer({
                     canvas,
                     alpha: true,
-                    antialias: true,
-                    powerPreference: 'high-performance',
+                    antialias: !isMobile,
+                    powerPreference: isMobile ? 'low-power' : 'high-performance',
                 });
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.8));
 
                 const scene = new THREE.Scene();
                 const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 120);
@@ -2778,7 +2882,7 @@
                     opacity: 0.82,
                 });
 
-                const total = 180;
+                const total = isMobile ? 60 : 180;
                 for (let i = 0; i < total; i += 1) {
                     const mesh = new THREE.Mesh(geometry, material.clone());
                     mesh.position.set(
@@ -2841,6 +2945,20 @@
                         rafId = window.requestAnimationFrame(render);
                     }
                 });
+
+                // Pause 3D canvas when hero scrolls off screen (saves GPU + battery)
+                const heroObserver = new IntersectionObserver(
+                    ([entry]) => {
+                        if (!entry.isIntersecting && rafId) {
+                            window.cancelAnimationFrame(rafId);
+                            rafId = 0;
+                        } else if (entry.isIntersecting && !rafId && !document.hidden) {
+                            rafId = window.requestAnimationFrame(render);
+                        }
+                    },
+                    { threshold: 0 }
+                );
+                heroObserver.observe(hero);
 
                 return true;
             };
