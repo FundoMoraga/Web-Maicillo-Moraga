@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://maicillomoraga.com/</loc>
-    <lastmod>2026-03-27</lastmod>
+    <lastmod>2026-03-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -20,5 +20,41 @@
       <image:title>Proyecto con maicillo</image:title>
       <image:caption>Superficie técnica con maicillo para drenaje y terminación</image:caption>
     </image:image>
+  </url>
+  <url>
+    <loc>https://maicillomoraga.com/productos/maicillo-fino/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://maicillomoraga.com/productos/maicillo-grueso/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://maicillomoraga.com/productos/piedras-decorativas/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://maicillomoraga.com/usos/paisajismo/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://maicillomoraga.com/usos/drenaje/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://maicillomoraga.com/usos/picadero/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 </urlset>
