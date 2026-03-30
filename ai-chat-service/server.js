@@ -16,6 +16,30 @@ const GOOGLE_AI_API_KEY =
 const RESEND_API_KEY = readEnv('RESEND_API_KEY');
 const RESERVATION_NOTIFY_EMAIL = readEnv('RESERVATION_NOTIFY_EMAIL') || 'contacto@fundomoraga.com';
 const RESERVATION_FROM_EMAIL = readEnv('RESERVATION_FROM_EMAIL') || 'reservas@fundomoraga.com';
+const MAICILLO_NOTIFY_EMAIL = readEnv('MAICILLO_NOTIFY_EMAIL') || 'contacto@maicillomoraga.com';
+const MAICILLO_FROM_EMAIL = readEnv('MAICILLO_FROM_EMAIL') || 'cotizaciones@maicillomoraga.com';
+const EXPOSE_HEALTH_DETAILS = readEnv('EXPOSE_HEALTH_DETAILS') === 'true';
+const MAX_CHAT_MESSAGE_LENGTH = Number(process.env.MAX_CHAT_MESSAGE_LENGTH || 1200);
+const MAX_CHAT_INPUT_MESSAGES = Number(process.env.MAX_CHAT_INPUT_MESSAGES || 10);
+
+const MAICILLO_PRICE_BY_PRODUCT = {
+  maicillo_fino: 7000,
+  maicillo_grueso: 5000,
+};
+
+const REQUIRED_RESERVATION_FIELDS = ['nombre', 'contacto', 'fecha', 'vehiculos'];
+const REQUIRED_MAICILLO_FIELDS = ['nombre', 'contacto', 'producto', 'volumen', 'comuna'];
+
+const COSMOS_ENDPOINT = readEnv('COSMOS_ENDPOINT');
+const COSMOS_KEY = readEnv('COSMOS_KEY');
+const COSMOS_CONNECTION_STRING = readEnv('COSMOS_CONNECTION_STRING');
+const COSMOS_DATABASE = process.env.COSMOS_DATABASE || 'chatbot';
+const COSMOS_CONTAINER = process.env.COSMOS_CONTAINER || 'conversations';
+
+let cosmosContainer = null;
+const reservationState = new Map();
+const maicilloLeadState = new Map();
+const rateLimitBuckets = new Map();
 
 function readEnv(name) {
   const value = process.env[name];
@@ -31,38 +55,6 @@ const ALLOWED_ORIGINS = [
   ...(process.env.CORS_ORIGINS || '').split(',').map((x) => x.trim()).filter(Boolean),
 ];
 
-const app = express();
-app.use(express.json({ limit: '12mb' }));
-app.use(
-  cors({
-    origin(origin, cb) {
-      if (!origin) return cb(null, true);
-      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-      return cb(new Error('CORS blocked'), false);
-    },
-  }),
-);
-
-const hasOpenAI = Boolean(OPENAI_API_KEY);
-const openai = hasOpenAI ? new OpenAI({ apiKey: OPENAI_API_KEY, timeout: 30000 }) : null;
-const googleAI = GOOGLE_AI_API_KEY ? new GoogleGenAI({ apiKey: GOOGLE_AI_API_KEY }) : null;
-
-const COSMOS_ENDPOINT = readEnv('COSMOS_ENDPOINT');
-const COSMOS_KEY = readEnv('COSMOS_KEY');
-const COSMOS_CONNECTION_STRING = readEnv('COSMOS_CONNECTION_STRING');
-const COSMOS_DATABASE = process.env.COSMOS_DATABASE || 'chatbot';
-const COSMOS_CONTAINER = process.env.COSMOS_CONTAINER || 'conversations';
-
-let cosmosContainer = null;
-const reservationState = new Map();
-
-const REQUIRED_RESERVATION_FIELDS = [
-  'nombre',
-  'contacto',
-  'fecha',
-  'vehiculos',
-];
-
 function normalizeText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -70,9 +62,57 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
+function getClientIp(req) {
+  const forwarded = String(req.get('x-forwarded-for') || '').trim();
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+}
+
+function applyRateLimit(req, res, next) {
+  const route = req.path;
+  const config = route.startsWith('/api/')
+    ? { windowMs: 60_000, max: 8 }
+    : { windowMs: 60_000, max: 35 };
+
+  const key = `${route}:${getClientIp(req)}`;
+  const now = Date.now();
+  const current = rateLimitBuckets.get(key) || { count: 0, resetAt: now + config.windowMs };
+
+  if (now > current.resetAt) {
+    current.count = 0;
+    current.resetAt = now + config.windowMs;
+  }
+
+  if (current.count >= config.max) {
+    const retryAfter = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
+    res.set('Retry-After', String(retryAfter));
+    return res.status(429).json({ error: 'Demasiadas solicitudes. Intenta nuevamente en unos segundos.' });
+  }
+
+  current.count += 1;
+  rateLimitBuckets.set(key, current);
+  return next();
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, state] of rateLimitBuckets.entries()) {
+    if (state.resetAt < now - 60_000) {
+      rateLimitBuckets.delete(key);
+    }
+  }
+}, 300_000).unref();
+
 function isReservationIntent(text) {
   const normalized = normalizeText(text);
   return /(reserv|agend|cupo|fecha|visita|ir al fundo|quiero ir)/.test(normalized);
+}
+
+function isMaicilloSalesIntent(text) {
+  const normalized = normalizeText(text);
+  return /(cotiz|compr|pedido|despacho|precio|valor|m3|metro cubico|quiero maicillo|necesito maicillo)/.test(normalized);
 }
 
 function isAffirmative(text) {
@@ -83,6 +123,30 @@ function isAffirmative(text) {
 function isNegative(text) {
   const normalized = normalizeText(text);
   return /^(no|nop|negativo|cancel|mejor no)\b/.test(normalized);
+}
+
+function normalizeProduct(product) {
+  const text = normalizeText(product);
+  if (/fino|arneado|amarillo/.test(text)) return 'maicillo_fino';
+  if (/grueso/.test(text)) return 'maicillo_grueso';
+  if (/decorativa|decorativas|piedra/.test(text)) return 'piedras_decorativas';
+  return '';
+}
+
+function productLabel(product) {
+  if (product === 'maicillo_fino') return 'Maicillo Fino (Arneado)';
+  if (product === 'maicillo_grueso') return 'Maicillo Grueso';
+  if (product === 'piedras_decorativas') return 'Piedras Decorativas de Maicillo';
+  return 'No definido';
+}
+
+function parseVolume(text) {
+  const normalized = String(text || '').replace(',', '.');
+  const match = normalized.match(/(\d+(?:\.\d{1,2})?)\s*(?:m3|m\^3|metro\s*cubico|metros\s*cubicos|m\s*cubicos)?/i);
+  if (!match?.[1]) return null;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value) || value <= 0 || value > 5000) return null;
+  return value;
 }
 
 function parseReservationFields(text) {
@@ -124,8 +188,54 @@ function parseReservationFields(text) {
   return parsed;
 }
 
+function parseMaicilloFields(text) {
+  const parsed = {};
+  const trimmed = String(text || '').trim();
+
+  const nameMatch = trimmed.match(/(?:mi nombre es|soy|nombre[:\s]+)([A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]{3,60})/i);
+  if (nameMatch?.[1]) {
+    parsed.nombre = nameMatch[1].trim().replace(/\s+/g, ' ');
+  }
+
+  const phoneMatch = trimmed.match(/(?:\+?56\s?)?(9\d{8})|(?:\+?56\s?)?(2\d{8})/);
+  if (phoneMatch?.[0]) {
+    parsed.contacto = phoneMatch[0].replace(/\s+/g, '');
+  }
+
+  const emailMatch = trimmed.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if (emailMatch?.[0] && !parsed.contacto) {
+    parsed.contacto = emailMatch[0].toLowerCase();
+  }
+
+  const product = normalizeProduct(trimmed);
+  if (product) {
+    parsed.producto = product;
+  }
+
+  const volume = parseVolume(trimmed);
+  if (volume) {
+    parsed.volumen = volume;
+  }
+
+  const comunaMatch = trimmed.match(/(?:comuna|en|desde)\s+([A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]{3,40})/i);
+  if (comunaMatch?.[1]) {
+    parsed.comuna = comunaMatch[1].trim().replace(/\s+/g, ' ');
+  }
+
+  const dateMatch = trimmed.match(/(\d{1,2}[\/\-.]\d{1,2}(?:[\/\-.]\d{2,4})?|\d{1,2}\s+de\s+[A-Za-záéíóúñ]+(?:\s+de\s+\d{4})?|hoy|mañana|esta\s+semana|proxima\s+semana)/i);
+  if (dateMatch?.[1]) {
+    parsed.fecha = dateMatch[1].trim();
+  }
+
+  return parsed;
+}
+
 function getMissingReservationField(state) {
   return REQUIRED_RESERVATION_FIELDS.find((key) => !state[key]);
+}
+
+function getMissingMaicilloField(state) {
+  return REQUIRED_MAICILLO_FIELDS.find((key) => !state[key]);
 }
 
 function getReservationQuestion(field) {
@@ -140,6 +250,23 @@ function getReservationQuestion(field) {
       return '¿Con cuántos vehículos vendrían? Así calculo el total al tiro.';
     default:
       return 'Cuéntame ese dato y seguimos con la reserva.';
+  }
+}
+
+function getMaicilloQuestion(field) {
+  switch (field) {
+    case 'nombre':
+      return 'Perfecto. Para avanzar con tu cotización, compárteme tu nombre completo.';
+    case 'contacto':
+      return 'Gracias. Ahora necesito tu WhatsApp o correo para enviarte confirmación.';
+    case 'producto':
+      return '¿Qué producto necesitas: maicillo fino, maicillo grueso o piedras decorativas?';
+    case 'volumen':
+      return '¿Qué volumen aproximado necesitas en m3?';
+    case 'comuna':
+      return '¿En qué comuna se entrega o retira el material?';
+    default:
+      return 'Compárteme ese dato y seguimos con la cotización.';
   }
 }
 
@@ -166,6 +293,89 @@ function buildReservationSummary(state) {
   ].join('\n');
 }
 
+function buildMaicilloSummary(state) {
+  const product = state.producto;
+  const volumen = Number(state.volumen || 0);
+  const unitPrice = MAICILLO_PRICE_BY_PRODUCT[product] || null;
+  const subtotalNeto = unitPrice ? unitPrice * volumen : null;
+  const iva = subtotalNeto ? Math.round(subtotalNeto * 0.19) : null;
+  const totalBruto = subtotalNeto ? subtotalNeto + iva : null;
+
+  const pricingBlock = subtotalNeto
+    ? [
+      `- Precio unitario referencial: $${unitPrice.toLocaleString('es-CL')} + IVA por m3 (cargado en cantera)`,
+      `- Subtotal neto estimado: $${Math.round(subtotalNeto).toLocaleString('es-CL')}`,
+      `- IVA 19% estimado: $${iva.toLocaleString('es-CL')}`,
+      `- Total referencial estimado: $${totalBruto.toLocaleString('es-CL')}`,
+    ]
+    : [
+      '- Producto con precio caso a caso (piedras decorativas).',
+      '- Te contactaremos con propuesta según formato, volumen y logística.',
+    ];
+
+  return [
+    'Te dejo el resumen de tu solicitud de cotización:',
+    `- Nombre: ${state.nombre}`,
+    `- Contacto: ${state.contacto}`,
+    `- Producto: ${productLabel(product)}`,
+    `- Volumen estimado: ${volumen} m3`,
+    `- Comuna: ${state.comuna}`,
+    state.fecha ? `- Fecha estimada: ${state.fecha}` : '- Fecha estimada: no informada',
+    ...pricingBlock,
+    'El valor de despacho se revisa según comuna y volumen. Si está todo correcto, responde "confirmo" y la dejo ingresada.',
+  ].join('\n');
+}
+
+async function initCosmos() {
+  if (!(COSMOS_CONNECTION_STRING || (COSMOS_ENDPOINT && COSMOS_KEY))) return;
+
+  const client = COSMOS_ENDPOINT && COSMOS_KEY
+    ? new CosmosClient({ endpoint: COSMOS_ENDPOINT, key: COSMOS_KEY })
+    : new CosmosClient(COSMOS_CONNECTION_STRING);
+
+  const { database } = await client.databases.createIfNotExists({ id: COSMOS_DATABASE });
+  const { container } = await database.containers.createIfNotExists({
+    id: COSMOS_CONTAINER,
+    partitionKey: { paths: ['/userId'] },
+  });
+  cosmosContainer = container;
+}
+
+async function saveMessage({ userId, role, message, conversationId, site = 'fundo' }) {
+  if (!cosmosContainer) return;
+  const now = new Date().toISOString();
+  await cosmosContainer.items.create({
+    id: `${conversationId}_${role}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    userId,
+    conversationId,
+    site,
+    role,
+    message,
+    timestamp: now,
+  });
+}
+
+async function getRecentMessages({ userId, site = 'fundo', limit = 12 }) {
+  if (!cosmosContainer) return [];
+  const querySpec = {
+    query: `SELECT TOP @limit c.role, c.message, c.timestamp
+            FROM c
+            WHERE c.userId = @userId
+              AND ((IS_DEFINED(c.site) AND c.site = @site) OR (NOT IS_DEFINED(c.site) AND @site = 'fundo'))
+            ORDER BY c.timestamp DESC`,
+    parameters: [
+      { name: '@userId', value: userId },
+      { name: '@site', value: site },
+      { name: '@limit', value: limit },
+    ],
+  };
+
+  const { resources } = await cosmosContainer.items
+    .query(querySpec, { partitionKey: userId })
+    .fetchAll();
+  return resources.reverse();
+}
+
 async function saveReservation({ userId, conversationId, reservation }) {
   if (!cosmosContainer) return;
   await cosmosContainer.items.create({
@@ -174,6 +384,19 @@ async function saveReservation({ userId, conversationId, reservation }) {
     userId,
     conversationId,
     reservation,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+async function saveMaicilloLead({ userId, conversationId, lead }) {
+  if (!cosmosContainer) return;
+  await cosmosContainer.items.create({
+    id: `maicillo_lead_${conversationId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    type: 'maicillo_lead',
+    site: 'maicillo',
+    userId,
+    conversationId,
+    lead,
     timestamp: new Date().toISOString(),
   });
 }
@@ -225,6 +448,54 @@ async function sendReservationEmail({ userId, conversationId, reservation }) {
   }
 }
 
+async function sendMaicilloLeadEmail({ userId, conversationId, lead }) {
+  if (!RESEND_API_KEY) return;
+
+  const unitPrice = MAICILLO_PRICE_BY_PRODUCT[lead?.producto] || null;
+  const volume = Number(lead?.volumen || 0);
+  const subtotalNeto = unitPrice ? unitPrice * volume : null;
+  const totalText = subtotalNeto
+    ? `Subtotal neto estimado (sin despacho): $${Math.round(subtotalNeto).toLocaleString('es-CL')}`
+    : 'Precio: revisión caso a caso';
+
+  const text = [
+    'Nueva solicitud de cotización confirmada en Maicillo Moraga',
+    '',
+    `Usuario: ${userId}`,
+    `Conversación: ${conversationId}`,
+    `Nombre: ${lead?.nombre || 'No informado'}`,
+    `Contacto: ${lead?.contacto || 'No informado'}`,
+    `Producto: ${productLabel(lead?.producto)}`,
+    `Volumen: ${volume || 0} m3`,
+    `Comuna: ${lead?.comuna || 'No informada'}`,
+    `Fecha estimada: ${lead?.fecha || 'No informada'}`,
+    totalText,
+  ].join('\n');
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: MAICILLO_FROM_EMAIL,
+        to: [MAICILLO_NOTIFY_EMAIL],
+        subject: `Lead cotización maicillo - ${lead?.nombre || userId}`,
+        text,
+      }),
+    });
+
+    if (!response.ok) {
+      const reason = await response.text();
+      console.warn('maicillo_email_failed', response.status, reason);
+    }
+  } catch (error) {
+    console.warn('maicillo_email_error', error?.message || error);
+  }
+}
+
 async function handleReservationFlow({ userId, message, conversationId }) {
   const existing = reservationState.get(userId);
   const hasIntent = isReservationIntent(message);
@@ -273,57 +544,113 @@ async function handleReservationFlow({ userId, message, conversationId }) {
   return buildReservationSummary(state);
 }
 
-async function initCosmos() {
-  if (!(COSMOS_CONNECTION_STRING || (COSMOS_ENDPOINT && COSMOS_KEY))) return;
+async function handleMaicilloLeadFlow({ userId, message, conversationId }) {
+  const key = `maicillo:${userId}`;
+  const existing = maicilloLeadState.get(key);
+  const hasIntent = isMaicilloSalesIntent(message);
 
-  const client = COSMOS_ENDPOINT && COSMOS_KEY
-    ? new CosmosClient({ endpoint: COSMOS_ENDPOINT, key: COSMOS_KEY })
-    : new CosmosClient(COSMOS_CONNECTION_STRING);
+  if (!existing && !hasIntent) return null;
 
-  const { database } = await client.databases.createIfNotExists({ id: COSMOS_DATABASE });
-  const { container } = await database.containers.createIfNotExists({
-    id: COSMOS_CONTAINER,
-    partitionKey: { paths: ['/userId'] },
-  });
-  cosmosContainer = container;
-}
-
-async function saveMessage({ userId, role, message, conversationId }) {
-  if (!cosmosContainer) return;
-  const now = new Date().toISOString();
-  await cosmosContainer.items.create({
-    id: `${conversationId}_${role}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    userId,
-    conversationId,
-    role,
-    message,
-    timestamp: now,
-  });
-}
-
-async function getRecentMessages({ userId, limit = 12 }) {
-  if (!cosmosContainer) return [];
-  const querySpec = {
-    query: `SELECT TOP @limit c.role, c.message, c.timestamp
-            FROM c
-            WHERE c.userId = @userId
-            ORDER BY c.timestamp DESC`,
-    parameters: [
-      { name: '@userId', value: userId },
-      { name: '@limit', value: limit },
-    ],
+  const state = existing || {
+    status: 'collecting',
+    nombre: '',
+    contacto: '',
+    producto: '',
+    volumen: null,
+    comuna: '',
+    fecha: '',
   };
 
-  const { resources } = await cosmosContainer.items
-    .query(querySpec, { partitionKey: userId })
-    .fetchAll();
-  return resources.reverse();
+  const parsed = parseMaicilloFields(message);
+  Object.assign(state, parsed);
+
+  if (state.status === 'awaiting_confirmation') {
+    if (isAffirmative(message)) {
+      state.status = 'completed';
+      maicilloLeadState.delete(key);
+      await saveMaicilloLead({ userId, conversationId, lead: state });
+      await sendMaicilloLeadEmail({ userId, conversationId, lead: state });
+      return 'Perfecto, tu solicitud de cotización quedó confirmada y registrada. Te van a contactar para cerrar disponibilidad y logística de despacho/retiro. Si quieres, te puedo ayudar al tiro con cálculo de espesor por uso para afinar el pedido.';
+    }
+
+    if (isNegative(message)) {
+      state.status = 'collecting';
+      maicilloLeadState.set(key, state);
+      return 'Dale, ajustemos la cotización. Dime qué dato quieres corregir y lo actualizo.';
+    }
+
+    maicilloLeadState.set(key, state);
+    return 'Si el resumen está correcto responde "confirmo" para ingresar la cotización. Si no, dime qué dato modificamos.';
+  }
+
+  const missingField = getMissingMaicilloField(state);
+  if (missingField) {
+    maicilloLeadState.set(key, state);
+    return getMaicilloQuestion(missingField);
+  }
+
+  state.status = 'awaiting_confirmation';
+  maicilloLeadState.set(key, state);
+  return buildMaicilloSummary(state);
 }
 
-function getConversationId(userId) {
-  const today = new Date().toISOString().slice(0, 10);
-  return `web_${userId}_${today}`;
+function isMaicilloRequest(req) {
+  const site = String(req.body?.site || '').toLowerCase().trim();
+  if (site === 'maicillo') {
+    return true;
+  }
+
+  const origin = String(req.get('origin') || '').toLowerCase();
+  const referer = String(req.get('referer') || '').toLowerCase();
+  const host = String(req.get('host') || '').toLowerCase();
+  const source = `${origin} ${referer} ${host}`;
+
+  return (
+    source.includes('maicillomoraga.com') ||
+    source.includes('www.maicillomoraga.com') ||
+    source.includes('fundo-moraga-maicillo-static.onrender.com')
+  );
 }
+
+function getSiteContext(req) {
+  return isMaicilloRequest(req) ? 'maicillo' : 'fundo';
+}
+
+function getConversationId(userId, site = 'fundo') {
+  const today = new Date().toISOString().slice(0, 10);
+  return `web_${site}_${userId}_${today}`;
+}
+
+function getInitGreeting(req, hasHistory) {
+  const isMaicillo = isMaicilloRequest(req);
+
+  if (hasHistory) {
+    return isMaicillo
+      ? '¡Hola de nuevo! Soy Hernando de Maicillo Moraga. ¿En qué te ayudo hoy?'
+      : '¡Hola de nuevo! Soy Hernando. ¿En qué te ayudo hoy?';
+  }
+
+  return isMaicillo
+    ? '¡Hola! Soy Hernando de Maicillo Moraga. Te puedo ayudar con rendimientos por m2, espesores recomendados, instalación y coordinación de pedidos.'
+    : '¡Hola! Soy Hernando de Fundo Moraga. Te puedo ayudar con reservas, precios, rutas y dudas de la experiencia off-road.';
+}
+
+const app = express();
+app.use(express.json({ limit: '12mb' }));
+app.use(['/chat', '/chat/init', '/api/visualize', '/api/generar-imagen'], applyRateLimit);
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true);
+      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      return cb(new Error('CORS blocked'), false);
+    },
+  }),
+);
+
+const hasOpenAI = Boolean(OPENAI_API_KEY);
+const openai = hasOpenAI ? new OpenAI({ apiKey: OPENAI_API_KEY, timeout: 30000 }) : null;
+const googleAI = GOOGLE_AI_API_KEY ? new GoogleGenAI({ apiKey: GOOGLE_AI_API_KEY }) : null;
 
 const SYSTEM_PROMPT = `Eres Hernando, anfitrión digital de Fundo Moraga.
 Responde en español chileno moderado, cálido y profesional.
@@ -407,40 +734,15 @@ RESTRICCIONES CRITICAS
 - Si un dato no está definido, dilo explícitamente y ofrece escalamiento por WhatsApp (+56 9 9445 5713) o correo (contacto@fundomoraga.com).
 - Mantén consistencia absoluta con estos datos oficiales.`;
 
-function isMaicilloRequest(req) {
-  const site = String(req.body?.site || '').toLowerCase().trim();
-  if (site === 'maicillo') {
-    return true;
-  }
-
-  const origin = String(req.get('origin') || '').toLowerCase();
-  const referer = String(req.get('referer') || '').toLowerCase();
-  const host = String(req.get('host') || '').toLowerCase();
-  const source = `${origin} ${referer} ${host}`;
-
-  return (
-    source.includes('maicillomoraga.com') ||
-    source.includes('www.maicillomoraga.com') ||
-    source.includes('fundo-moraga-maicillo-static.onrender.com')
-  );
-}
-
-function getInitGreeting(req, hasHistory) {
-  const isMaicillo = isMaicilloRequest(req);
-
-  if (hasHistory) {
-    return isMaicillo
-      ? '¡Hola de nuevo! Soy Hernando de Maicillo Moraga. ¿En qué te ayudo hoy?'
-      : '¡Hola de nuevo! Soy Hernando. ¿En qué te ayudo hoy?';
-  }
-
-  return isMaicillo
-    ? '¡Hola! Soy Hernando de Maicillo Moraga. Te puedo ayudar con rendimientos por m2, espesores recomendados, instalación y coordinación de pedidos.'
-    : '¡Hola! Soy Hernando de Fundo Moraga. Te puedo ayudar con reservas, precios, rutas y dudas de la experiencia off-road.';
-}
-
 app.get('/health', (_req, res) => {
-  res.json({
+  if (!EXPOSE_HEALTH_DETAILS) {
+    return res.json({
+      ok: true,
+      service: 'fundo-moraga-ai-chat-service',
+    });
+  }
+
+  return res.json({
     ok: true,
     service: 'fundo-moraga-ai-chat-service',
     model: OPENAI_MODEL,
@@ -457,10 +759,11 @@ app.get('/health', (_req, res) => {
 });
 
 app.post('/chat/init', async (req, res) => {
-  const userId = String(req.body?.user_id || '').trim() || 'web_guest';
+  const userId = String(req.body?.user_id || '').trim().slice(0, 120) || 'web_guest';
+  const site = getSiteContext(req);
 
   try {
-    const history = await getRecentMessages({ userId, limit: 1 });
+    const history = await getRecentMessages({ userId, site, limit: 1 });
     return res.json({ greeting: getInitGreeting(req, history.length > 0) });
   } catch {
     return res.json({ greeting: getInitGreeting(req, false) });
@@ -472,26 +775,43 @@ app.post('/chat', async (req, res) => {
     return res.status(500).json({ error: 'OPENAI_API_KEY no configurada en el servicio API.' });
   }
 
-  const userId = String(req.body?.user_id || '').trim();
+  const userId = String(req.body?.user_id || '').trim().slice(0, 120);
   const message = String(req.body?.message || '').trim();
 
   if (!userId || !message) {
     return res.status(400).json({ error: 'user_id y message son obligatorios.' });
   }
 
+  if (message.length > MAX_CHAT_MESSAGE_LENGTH) {
+    return res.status(400).json({
+      error: `El mensaje excede el máximo permitido de ${MAX_CHAT_MESSAGE_LENGTH} caracteres.`,
+    });
+  }
+
   try {
-    const isMaicillo = isMaicilloRequest(req);
-    const conversationId = getConversationId(userId);
+    const site = getSiteContext(req);
+    const isMaicillo = site === 'maicillo';
+    const conversationId = getConversationId(userId, site);
+
+    if (isMaicillo) {
+      const leadReply = await handleMaicilloLeadFlow({ userId, message, conversationId });
+      if (leadReply) {
+        await saveMessage({ userId, role: 'user', message, conversationId, site });
+        await saveMessage({ userId, role: 'assistant', message: leadReply, conversationId, site });
+        return res.json({ response: leadReply, model: `${OPENAI_MODEL}-maicillo-sales-flow` });
+      }
+    }
+
     if (!isMaicillo) {
       const reservationReply = await handleReservationFlow({ userId, message, conversationId });
       if (reservationReply) {
-        await saveMessage({ userId, role: 'user', message, conversationId });
-        await saveMessage({ userId, role: 'assistant', message: reservationReply, conversationId });
+        await saveMessage({ userId, role: 'user', message, conversationId, site });
+        await saveMessage({ userId, role: 'assistant', message: reservationReply, conversationId, site });
         return res.json({ response: reservationReply, model: `${OPENAI_MODEL}-reservation-flow` });
       }
     }
 
-    const history = await getRecentMessages({ userId, limit: 10 });
+    const history = await getRecentMessages({ userId, site, limit: MAX_CHAT_INPUT_MESSAGES });
 
     const input = [
       { role: 'system', content: isMaicillo ? MAICILLO_SYSTEM_PROMPT : SYSTEM_PROMPT },
@@ -502,7 +822,8 @@ app.post('/chat', async (req, res) => {
     const completion = await openai.responses.create({
       model: OPENAI_MODEL,
       input,
-      temperature: 0.5,
+      temperature: 0.35,
+      max_output_tokens: 420,
     });
 
     const botReply =
@@ -511,8 +832,8 @@ app.post('/chat', async (req, res) => {
         ? 'Gracias por tu mensaje. Si quieres, te ayudo a definir producto, espesor y volumen para tu proyecto.'
         : 'Gracias por tu mensaje. ¿Quieres que te ayude con una reserva?');
 
-    await saveMessage({ userId, role: 'user', message, conversationId });
-    await saveMessage({ userId, role: 'assistant', message: botReply, conversationId });
+    await saveMessage({ userId, role: 'user', message, conversationId, site });
+    await saveMessage({ userId, role: 'assistant', message: botReply, conversationId, site });
 
     return res.json({ response: botReply, model: OPENAI_MODEL });
   } catch (error) {
@@ -572,7 +893,6 @@ app.post('/api/visualize', async (req, res) => {
     ? mimeType
     : 'image/jpeg';
 
-  // Validate rough size (base64 of 10MB image ≈ 13.6M chars)
   if (imageBase64.length > 14_000_000) {
     return res.status(413).json({ error: 'La imagen es demasiado grande. Usa una imagen de hasta 10 MB.' });
   }
@@ -641,7 +961,7 @@ app.post('/api/generar-imagen', async (req, res) => {
     return res.status(400).json({ error: 'Debes enviar un prompt.' });
   }
 
-  const enforcedPrompt = `${TEXT_TO_IMAGE_BASE_PROMPT}\n\nProject brief from user: ${prompt}`;
+  const enforcedPrompt = `${TEXT_TO_IMAGE_BASE_PROMPT}\n\nProject brief from user: ${prompt.slice(0, 500)}`;
 
   const modelName = 'gemini-3.1-flash-image-preview';
 

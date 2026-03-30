@@ -736,7 +736,6 @@ async function sendMessage(message) {
     
     try {
         // Call Hernando API
-        console.log('Enviando mensaje a Hernando:', message);
         const apiBase = await getApiBaseUrl();
         if (!apiBase) {
             throw new Error('No hay endpoint de chat disponible');
@@ -752,12 +751,9 @@ async function sendMessage(message) {
                 site: CHAT_SITE_CONTEXT,
             })
         });
-        
-        console.log('Respuesta recibida:', response.status, response.statusText);
-        
+
         if (response.ok) {
             const data = await response.json();
-            console.log('Datos:', data);
             typingIndicator.remove();
             addMessageToChat(data.response || data.message || 'Gracias por tu mensaje. Te responderé pronto.', 'bot');
         } else {
