@@ -171,20 +171,35 @@
                     "@type": "Product",
                     "@id": "https://maicillomoraga.com/#producto-fino",
                     "name": "Maicillo Fino (Arneado)",
-                    "url": "https://maicillomoraga.com/#producto-fino",
+                    "url": "https://maicillomoraga.com/productos/maicillo-fino/",
+                    "image": ["https://maicillomoraga.com/WhatsApp%20Image%202026-03-25%20at%208.19.37%20PM.jpeg"],
                     "description": "Material arneado muy fino, ideal para jardinería, decoración y terminación final de caminos en parcelas.",
                     "category": "Maicillo fino",
                     "material": "Granito descompuesto",
                     "brand": {
-                        "@id": "https://maicillomoraga.com/#organization"
+                        "@type": "Brand",
+                        "name": "Maicillo Moraga"
                     },
                     "offers": {
                         "@type": "Offer",
                         "priceCurrency": "CLP",
                         "price": "7000",
                         "availability": "https://schema.org/InStock",
+                        "url": "https://maicillomoraga.com/productos/maicillo-fino/",
                         "seller": {
                             "@id": "https://maicillomoraga.com/#organization"
+                        },
+                        "shippingDetails": {
+                            "@type": "OfferShippingDetails",
+                            "shippingDestination": {
+                                "@type": "DefinedRegion",
+                                "addressCountry": "CL"
+                            }
+                        },
+                        "hasMerchantReturnPolicy": {
+                            "@type": "MerchantReturnPolicy",
+                            "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
+                            "applicableCountry": "CL"
                         }
                     }
                 },
@@ -192,20 +207,35 @@
                     "@type": "Product",
                     "@id": "https://maicillomoraga.com/#producto-grueso",
                     "name": "Maicillo Grueso",
-                    "url": "https://maicillomoraga.com/#producto-grueso",
+                    "url": "https://maicillomoraga.com/productos/maicillo-grueso/",
+                    "image": ["https://maicillomoraga.com/WhatsApp%20Image%202026-03-25%20at%208.20.20%20PM.jpeg"],
                     "description": "Fracción de mayor tamaño para base drenante, subcapas de estabilización, zonas de tránsito y control de escorrentía.",
                     "category": "Maicillo grueso",
                     "material": "Granito descompuesto",
                     "brand": {
-                        "@id": "https://maicillomoraga.com/#organization"
+                        "@type": "Brand",
+                        "name": "Maicillo Moraga"
                     },
                     "offers": {
                         "@type": "Offer",
                         "priceCurrency": "CLP",
                         "price": "5000",
                         "availability": "https://schema.org/InStock",
+                        "url": "https://maicillomoraga.com/productos/maicillo-grueso/",
                         "seller": {
                             "@id": "https://maicillomoraga.com/#organization"
+                        },
+                        "shippingDetails": {
+                            "@type": "OfferShippingDetails",
+                            "shippingDestination": {
+                                "@type": "DefinedRegion",
+                                "addressCountry": "CL"
+                            }
+                        },
+                        "hasMerchantReturnPolicy": {
+                            "@type": "MerchantReturnPolicy",
+                            "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
+                            "applicableCountry": "CL"
                         }
                     }
                 },
@@ -213,12 +243,31 @@
                     "@type": "Product",
                     "@id": "https://maicillomoraga.com/#producto-decorativas",
                     "name": "Piedras Decorativas de Maicillo",
-                    "url": "https://maicillomoraga.com/#producto-decorativas",
+                    "url": "https://maicillomoraga.com/productos/piedras-decorativas/",
+                    "image": ["https://maicillomoraga.com/WhatsApp%20Image%202026-03-25%20at%208.18.22%20PM.jpeg"],
                     "description": "Selección de piedra de maicillo en formatos decorativos para paisajismo premium, bordes, franjas y acentos arquitectónicos.",
                     "category": "Piedra decorativa de maicillo",
                     "material": "Granito descompuesto",
                     "brand": {
-                        "@id": "https://maicillomoraga.com/#organization"
+                        "@type": "Brand",
+                        "name": "Maicillo Moraga"
+                    },
+                    "offers": {
+                        "@type": "Offer",
+                        "availability": "https://schema.org/InStock",
+                        "url": "https://maicillomoraga.com/productos/piedras-decorativas/",
+                        "shippingDetails": {
+                            "@type": "OfferShippingDetails",
+                            "shippingDestination": {
+                                "@type": "DefinedRegion",
+                                "addressCountry": "CL"
+                            }
+                        },
+                        "hasMerchantReturnPolicy": {
+                            "@type": "MerchantReturnPolicy",
+                            "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
+                            "applicableCountry": "CL"
+                        }
                     }
                 },
                 {
@@ -232,8 +281,7 @@
                             "price": "7000",
                             "availability": "https://schema.org/InStock",
                             "itemOffered": {
-                                "@type": "Product",
-                                "name": "Maicillo Fino (Arneado)"
+                                "@id": "https://maicillomoraga.com/#producto-fino"
                             }
                         },
                         {
@@ -242,15 +290,13 @@
                             "price": "5000",
                             "availability": "https://schema.org/InStock",
                             "itemOffered": {
-                                "@type": "Product",
-                                "name": "Maicillo Grueso"
+                                "@id": "https://maicillomoraga.com/#producto-grueso"
                             }
                         },
                         {
                             "@type": "Offer",
                             "itemOffered": {
-                                "@type": "Product",
-                                "name": "Piedras Decorativas de Maicillo"
+                                "@id": "https://maicillomoraga.com/#producto-decorativas"
                             }
                         }
                     ]
