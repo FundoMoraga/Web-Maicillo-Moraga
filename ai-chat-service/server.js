@@ -72,9 +72,12 @@ function getClientIp(req) {
 
 function applyRateLimit(req, res, next) {
   const route = req.path;
-  const config = route.startsWith('/api/')
-    ? { windowMs: 60_000, max: 8 }
-    : { windowMs: 60_000, max: 35 };
+  const isImageGenerationRoute = route === '/api/visualize' || route === '/api/generar-imagen';
+  const config = isImageGenerationRoute
+    ? { windowMs: 60_000, max: 2 }
+    : route.startsWith('/api/')
+      ? { windowMs: 60_000, max: 8 }
+      : { windowMs: 60_000, max: 35 };
 
   const key = `${route}:${getClientIp(req)}`;
   const now = Date.now();

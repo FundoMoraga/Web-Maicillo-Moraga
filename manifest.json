@@ -12,8 +12,14 @@
   "categories": ["business", "construction", "home", "shopping"],
   "icons": [
     {
-      "src": "1CDA5BE7-652E-48ED-866F-1F8EBD2EBEBF.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
