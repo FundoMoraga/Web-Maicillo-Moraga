@@ -1,5 +1,11 @@
 (() => {
     'use strict';
+
+const debugLog = (...args) => {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        window.console.log(...args);
+    }
+};
     
 // ============================================
 // PARTICLES ANIMATION (Canvas-based, CSP-safe)
@@ -96,7 +102,7 @@ const initParticles = () => {
     
     window.addEventListener('resize', resizeCanvas);
     
-    console.log('✅ Partículas Canvas inicializadas (CSP-safe)');
+    debugLog('✅ Partículas Canvas inicializadas (CSP-safe)');
 };
 
 if (document.readyState === 'loading') {
@@ -119,9 +125,6 @@ const setChatOpen = (isOpen) => {
 const ASSETS_BASE = 'https://fundomoragastorage.blob.core.windows.net/assets';
 const toAssetUrl = (url) => {
     if (!url || /^https?:\/\//i.test(url) || /^data:/i.test(url) || /^blob:/i.test(url)) return url;
-    const clean = url.replace(/^\/+/, ''); // (incorrecto, lo corregimos abajo)
-    // Corregido: eliminar barras normales al inicio
-    // Elimina cualquier cantidad de barras normales al inicio
     const cleanUrl = url.replace(/^\/*/, '');
     const trimmed = cleanUrl.startsWith('assets/') ? cleanUrl.slice(7) : cleanUrl;
     return `${ASSETS_BASE}/${encodeURI(trimmed)}`;
@@ -242,7 +245,7 @@ const initLegendGate = () => {
     const playLegend = (targetUrl) => {
         if (overlay.classList.contains('active')) return;
         
-        console.log('🎬 Leyenda: Iniciando reproducción del video');
+        debugLog('🎬 Leyenda: Iniciando reproducción del video');
         document.body.style.overflow = 'hidden';
         overlay.classList.remove('is-exiting');
         overlay.classList.add('active');
@@ -278,7 +281,7 @@ const initLegendGate = () => {
             if (overlay.classList.contains('is-exiting')) return;
             if (skipBtn) skipBtn.disabled = true;
             overlay.classList.add('is-exiting');
-            console.log('🌘 Leyenda: Iniciando desvanecimiento de salida');
+            debugLog('🌘 Leyenda: Iniciando desvanecimiento de salida');
         };
 
         const finish = () => {
@@ -287,7 +290,7 @@ const initLegendGate = () => {
             clearTimers();
             video.removeEventListener('timeupdate', onTimeUpdate);
             beginExit();
-            console.log('✅ Leyenda: Iniciando transición de salida hacia', targetUrl);
+            debugLog('✅ Leyenda: Iniciando transición de salida hacia', targetUrl);
             window.setTimeout(() => {
                 navigate(targetUrl);
             }, exitTransitionMs);
@@ -302,12 +305,12 @@ const initLegendGate = () => {
                 window.clearTimeout(navigateTimer);
                 navigateTimer = 0;
             }
-            console.log('⏰ Leyenda: Timers limpiados');
+            debugLog('⏰ Leyenda: Timers limpiados');
         };
         
         const scheduleGate = () => {
             clearTimers();
-            console.log(`⏰ Leyenda: Gate configurado a ${Math.round(gateDurationMs / 1000)}s`);
+            debugLog(`⏰ Leyenda: Gate configurado a ${Math.round(gateDurationMs / 1000)}s`);
             exitTimer = window.setTimeout(() => {
                 beginExit();
             }, Math.max(0, gateDurationMs - exitTransitionMs));
@@ -320,7 +323,7 @@ const initLegendGate = () => {
         scheduleGate();
 
         const onEnd = () => {
-            console.log('🏁 Leyenda: Video terminó, esperando tiempo fijo del gate');
+            debugLog('🏁 Leyenda: Video terminó, esperando tiempo fijo del gate');
         };
         
         const onError = (e) => {
@@ -333,7 +336,7 @@ const initLegendGate = () => {
         const onTimeUpdate = () => {
             if (!hasStarted && video.currentTime > 0) {
                 hasStarted = true;
-                console.log('▶️ Leyenda: Video comenzó a reproducirse');
+                debugLog('▶️ Leyenda: Video comenzó a reproducirse');
             }
         };
 
@@ -343,7 +346,7 @@ const initLegendGate = () => {
         video.addEventListener('timeupdate', onTimeUpdate);
         
         video.addEventListener('loadedmetadata', () => {
-            console.log(`📊 Leyenda: Metadata cargada - Duración: ${video.duration}s, Estado: ${video.readyState}`);
+            debugLog(`📊 Leyenda: Metadata cargada - Duración: ${video.duration}s, Estado: ${video.readyState}`);
         }, { once: true });
 
         // Cargar y reproducir
@@ -353,7 +356,7 @@ const initLegendGate = () => {
             const p = video.play();
             if (p && typeof p.then === 'function') {
                 p.then(() => {
-                    console.log('✅ Leyenda: play() completado exitosamente');
+                    debugLog('✅ Leyenda: play() completado exitosamente');
                 }).catch((err) => {
                     console.error('❌ Leyenda: Error en play():', err);
                     if (!navigateTimer) {
@@ -370,7 +373,7 @@ const initLegendGate = () => {
 
         if (skipBtn) {
             skipBtn.onclick = () => {
-                console.log('⏭️ Leyenda: Usuario saltó el video');
+                debugLog('⏭️ Leyenda: Usuario saltó el video');
                 finish();
             };
         }
@@ -920,7 +923,7 @@ function trackEvent(category, action, label) {
             'event_label': label
         });
     }
-    console.log('Event:', category, action, label);
+    debugLog('Event:', category, action, label);
 }
 
 // Track important interactions
@@ -933,8 +936,8 @@ document.querySelectorAll('.btn-primary, .btn-reserva').forEach(button => {
 // ============================================
 // CONSOLE MESSAGE
 // ============================================
-console.log('%c¡Bienvenido a Fundo Moraga! 🌿', 'font-size: 20px; color: #2c5530; font-weight: bold;');
-console.log('%cSitio desarrollado con 💚', 'font-size: 14px; color: #666;');
+debugLog('%c¡Bienvenido a Fundo Moraga! 🌿', 'font-size: 20px; color: #2c5530; font-weight: bold;');
+debugLog('%cSitio desarrollado con 💚', 'font-size: 14px; color: #666;');
 
 // ============================================
 // PARTICLES.JS INITIALIZATION
@@ -1901,9 +1904,9 @@ window.addEventListener('resize', setVH);
 // ============================================
 // CONSOLE EASTER EGG
 // ============================================
-console.log('%c🌿 Fundo Moraga - Batuco Off Road', 'font-size: 24px; font-weight: bold; color: #d4af37; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);');
-console.log('%c475 años de historia desde 1551', 'font-size: 16px; color: #2c5530;');
-console.log('%c¿Interesado en trabajar con nosotros? Envía tu CV a: contacto@fundomoraga.com', 'font-size: 14px; color: #666;');
+debugLog('%c🌿 Fundo Moraga - Batuco Off Road', 'font-size: 24px; font-weight: bold; color: #d4af37; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);');
+debugLog('%c475 años de historia desde 1551', 'font-size: 16px; color: #2c5530;');
+debugLog('%c¿Interesado en trabajar con nosotros? Envía tu CV a: contacto@fundomoraga.com', 'font-size: 14px; color: #666;');
 
 // ============================================
 // ANALYTICS READY
@@ -1911,7 +1914,7 @@ console.log('%c¿Interesado en trabajar con nosotros? Envía tu CV a: contacto@f
 window.addEventListener('load', () => {
     // Track page load time
     const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
-    console.log(`Página cargada en ${loadTime}ms`);
+    debugLog(`Página cargada en ${loadTime}ms`);
     
     // You can send this to your analytics
     if (typeof gtag !== 'undefined') {
@@ -2178,7 +2181,7 @@ if (window.location.pathname.includes('historia.html')) {
     
     document.body.appendChild(printBtn);
     
-    console.log('✅ Historia page enhancements loaded');
+    debugLog('✅ Historia page enhancements loaded');
 }
 })();
 
@@ -2290,7 +2293,7 @@ if (window.location.pathname.includes('historia.html')) {
         initGallery();
     }
     
-    console.log('✅ Lightbox premium inicializado');
+    debugLog('✅ Lightbox premium inicializado');
 })();
 
 // ============================================
@@ -2321,7 +2324,7 @@ if (window.location.pathname.includes('historia.html')) {
     // Initial check
     toggleButton();
     
-    console.log('✅ Scroll to top inicializado');
+    debugLog('✅ Scroll to top inicializado');
 })();
 
 // ============================================
@@ -2437,7 +2440,7 @@ if (window.location.pathname.includes('historia.html')) {
     `;
     document.head.appendChild(style);
     
-    console.log('✅ Form validation mejorada');
+    debugLog('✅ Form validation mejorada');
 })();
 
-console.log('🌟 Todas las mejoras premium cargadas exitosamente');
+debugLog('🌟 Todas las mejoras premium cargadas exitosamente');
